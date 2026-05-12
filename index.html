@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NPPE Flashcards</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root {
+    --bg: #f4f1ea;
+    --paper: #fffdf7;
+    --ink: #1a1a1a;
+    --ink-soft: #555;
+    --accent: #8b3a3a;       /* deep burgundy */
+    --accent-soft: #c9a47a;  /* warm tan */
+    --line: #d8d1c0;
+    --back-bg: #faf3e0;
+    --shadow: rgba(60, 40, 20, 0.12);
+    --shadow-deep: rgba(60, 40, 20, 0.22);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(139, 58, 58, 0.04), transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(201, 164, 122, 0.06), transparent 50%);
+    color: var(--ink);
+    font-family: Georgia, 'Iowan Old Style', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 16px;
+  }
+
+  header {
+    max-width: 920px;
+    margin: 0 auto 16px;
+    width: 100%;
+    text-align: center;
+  }
+  h1 {
+    font-family: 'Iowan Old Style', Georgia, serif;
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+  h1 .accent { color: var(--accent); font-style: italic; }
+  .subtitle {
+    color: var(--ink-soft);
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .controls {
+    max-width: 920px;
+    margin: 0 auto 18px;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 14px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    box-shadow: 0 1px 3px var(--shadow);
+  }
+  .controls label {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-right: 4px;
+  }
+  select, button {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 7px 12px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  select:hover, button:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  button.primary {
+    background: var(--accent);
+    color: var(--paper);
+    border-color: var(--accent);
+  }
+  button.primary:hover {
+    background: #6e2d2d;
+    color: var(--paper);
+  }
+  .progress {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Card */
+  .stage {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 0;
+    min-height: 0;
+  }
+
+  .card-wrap {
+    width: 100%;
+    max-width: 720px;
+    aspect-ratio: 5 / 3;
+    perspective: 2000px;
+    cursor: pointer;
+  }
+  @media (max-width: 600px) {
+    .card-wrap { aspect-ratio: 4 / 5; }
+  }
+
+  .card {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+  .card.flipped { transform: rotateY(180deg); }
+
+  .face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    box-shadow:
+      0 1px 2px var(--shadow),
+      0 12px 28px -8px var(--shadow-deep);
+    padding: 32px 40px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .face.back {
+    transform: rotateY(180deg);
+    background: var(--back-bg);
+  }
+
+  .topic-tag {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 14px;
+    font-family: Georgia, serif;
+  }
+  .topic-tag::before {
+    content: "";
+    display: inline-block;
+    width: 16px;
+    height: 1px;
+    background: var(--accent);
+    vertical-align: middle;
+    margin-right: 8px;
+    margin-bottom: 2px;
+  }
+
+  .card-number {
+    position: absolute;
+    bottom: 18px;
+    right: 24px;
+    font-size: 11px;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+    opacity: 0.6;
+  }
+
+  .face-content {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    align-items: center;
+  }
+  .face.back .face-content { align-items: flex-start; padding-top: 4px; }
+
+  .front-text {
+    font-size: clamp(18px, 2.6vw, 24px);
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--ink);
+  }
+  .back-text {
+    font-size: clamp(14px, 1.9vw, 17px);
+    line-height: 1.55;
+    color: var(--ink);
+    white-space: pre-wrap;
+    width: 100%;
+  }
+
+  .flip-hint {
+    position: absolute;
+    bottom: 18px;
+    left: 24px;
+    font-size: 11px;
+    color: var(--ink-soft);
+    opacity: 0.5;
+    letter-spacing: 0.5px;
+  }
+
+  /* Navigation */
+  .nav {
+    max-width: 920px;
+    margin: 18px auto 0;
+    width: 100%;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .nav button {
+    min-width: 100px;
+    font-size: 13px;
+    padding: 9px 16px;
+  }
+  .rate-buttons {
+    display: flex;
+    gap: 8px;
+    margin: 0 12px;
+  }
+  .rate-buttons button {
+    min-width: 80px;
+    font-weight: 600;
+  }
+  .rate-buttons .know { color: #2d6a2f; border-color: #b0d4b2; }
+  .rate-buttons .know:hover { background: #2d6a2f; color: var(--paper); border-color: #2d6a2f; }
+  .rate-buttons .unsure { color: #b08400; border-color: #e0d090; }
+  .rate-buttons .unsure:hover { background: #b08400; color: var(--paper); border-color: #b08400; }
+  .rate-buttons .dontknow { color: var(--accent); border-color: #d4a8a8; }
+  .rate-buttons .dontknow:hover { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+
+  .keyboard-help {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 11px;
+    color: var(--ink-soft);
+    opacity: 0.7;
+    letter-spacing: 0.5px;
+  }
+  .keyboard-help kbd {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: Georgia, serif;
+    font-size: 11px;
+    margin: 0 2px;
+  }
+
+  .stats-bar {
+    max-width: 920px;
+    margin: 12px auto 0;
+    width: 100%;
+    display: flex;
+    height: 4px;
+    background: var(--line);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .stats-bar .seg {
+    transition: width 0.3s ease;
+  }
+  .stats-bar .know { background: #5ca65f; }
+  .stats-bar .unsure { background: #d4a017; }
+  .stats-bar .dontknow { background: var(--accent); }
+
+  .empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>NPPE <span class="accent">Flashcards</span></h1>
+  <p class="subtitle">National Professional Practice Examination · Study Set</p>
+</header>
+
+<div class="controls">
+  <label for="topic">Topic:</label>
+  <select id="topic">
+    <option value="__all__">All topics</option>
+  </select>
+
+  <label for="filter">Show:</label>
+  <select id="filter">
+    <option value="all">All cards</option>
+    <option value="unrated">Unrated only</option>
+    <option value="dontknow">Don't know</option>
+    <option value="unsure">Unsure</option>
+    <option value="know">Know it</option>
+  </select>
+
+  <button id="shuffle">Shuffle</button>
+  <button id="reset" title="Reset all progress">Reset progress</button>
+
+  <div class="progress" id="progress">0 / 0</div>
+</div>
+
+<div class="stats-bar" id="statsBar">
+  <div class="seg know" id="segKnow" style="width:0%"></div>
+  <div class="seg unsure" id="segUnsure" style="width:0%"></div>
+  <div class="seg dontknow" id="segDontknow" style="width:0%"></div>
+</div>
+
+<div class="stage">
+  <div class="card-wrap" id="cardWrap">
+    <div class="card" id="card">
+      <div class="face front">
+        <div class="topic-tag" id="frontTopic"></div>
+        <div class="face-content"><div class="front-text" id="frontText"></div></div>
+        <div class="flip-hint">Click or press Space to flip</div>
+        <div class="card-number" id="frontNumber"></div>
+      </div>
+      <div class="face back">
+        <div class="topic-tag" id="backTopic"></div>
+        <div class="face-content"><div class="back-text" id="backText"></div></div>
+        <div class="card-number" id="backNumber"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="nav">
+  <button id="prev">← Previous</button>
+  <div class="rate-buttons">
+    <button class="dontknow" id="rateDontknow" title="Don't know (1)">Don't know</button>
+    <button class="unsure" id="rateUnsure" title="Unsure (2)">Unsure</button>
+    <button class="know" id="rateKnow" title="Know it (3)">Know it</button>
+  </div>
+  <button id="next" class="primary">Next →</button>
+</div>
+
+<div class="keyboard-help">
+  <kbd>Space</kbd> flip · <kbd>←</kbd> <kbd>→</kbd> navigate · <kbd>1</kbd> don't know · <kbd>2</kbd> unsure · <kbd>3</kbd> know it · <kbd>S</kbd> shuffle
+</div>
+
+<script id="dataScript" type="application/json">{"cards": [{"topic": "Professionalism", "front": "What are the 4 defining elements of a profession?", "back": "1) Advanced specialized knowledge & skills the public takes on trust\n2) Service to the public in the public interest\n3) Bound by a distinct code of ethics\n4) Self-governing body that regulates standards (right to self-regulate is EARNED, not given)"}, {"topic": "Professionalism", "front": "Who regulates engineering in Canada?", "back": "Provincial/territorial associations (e.g., PEO in Ontario, APEGA in Alberta). Each has authority to license, discipline, and enforce within its jurisdiction. Engineers Canada is NOT a regulator — it's an association of the associations that creates standards, guidelines, and handles accreditation (CEAB)."}, {"topic": "Professionalism", "front": "What is the difference between 'right to title' and 'scope of practice'?", "back": "Right to title: only licensed members may call themselves 'Professional Engineer' or 'P.Eng.' Scope of practice: only licensed members may perform engineering work as defined in the Act (advising, designing, evaluating works involving public safety using math/science principles). Both are protected by provincial Acts."}, {"topic": "Professionalism", "front": "What is the Iron Ring / Engineering Ring?", "back": "A symbol of obligation worn on the working hand (typically the pinky of the dominant hand). Received at the Ritual of the Calling of an Engineer (a Kipling-authored ceremony). It is NOT a license to practice and has no legal status. Geoscientists wear the Earth Ring."}, {"topic": "Professionalism", "front": "What is the source of legal authority for professional engineers in Ontario?", "back": "The Professional Engineers Act (R.S.O. 1990, c. P.28) and Regulation 941. These give PEO authority to license, set standards, discipline members, and protect the title 'P.Eng.' and the practice of professional engineering."}, {"topic": "Professionalism", "front": "What does P.Eng. allow you to do?", "back": "1) Use the title 'Professional Engineer' / 'P.Eng.'\n2) Independently practice engineering in your area of competence\n3) Take responsibility for engineering work (apply your seal)\n4) Supervise/take responsibility for work of non-licensed staff (EITs, technologists)"}, {"topic": "Ethics - Code Core Tenets", "front": "What is the #1 duty under every Code of Ethics in Canada?", "back": "Duty to PUBLIC SAFETY, HEALTH, and WELFARE — this is PARAMOUNT and overrides all other duties (to employer, client, profession, or self). When duties conflict, public interest ALWAYS wins."}, {"topic": "Ethics - Code Core Tenets", "front": "List the duties in order of priority under the Code of Ethics.", "back": "1) PUBLIC (safety, health, welfare, environment) — paramount\n2) EMPLOYER (loyalty, confidentiality, competence)\n3) CLIENT (faithful agent, disclose conflicts)\n4) COLLEAGUES / PROFESSION (fairness, courtesy, good faith)\n5) SELF (maintain competence, dignity, reputation)\nHigher duty always trumps lower."}, {"topic": "Ethics - Code Core Tenets", "front": "What does 'practice only in your area of competence' mean?", "back": "Engineers must only undertake work for which they have adequate training, education, AND experience. If asked to work outside competence, you must either: (a) decline, (b) acquire competence through study/training, or (c) work under the direction of someone competent. Never just 'wing it.'"}, {"topic": "Ethics - Code Core Tenets", "front": "What is the duty to report (whistleblowing)?", "back": "An engineer MUST report (to the proper authority — employer first, then regulator, then public if needed) any situation that endangers public safety, OR any unethical/illegal conduct by another engineer. Whistleblower protections exist in most Acts. Failing to report can itself be professional misconduct."}, {"topic": "Ethics - Code Core Tenets", "front": "What is the proper sequence when reporting a public safety concern?", "back": "1) Document the concern in writing\n2) Raise with immediate supervisor / employer\n3) Escalate within the organization if not resolved\n4) Report to the regulator (PEO) and/or relevant authority (e.g., MOL)\n5) Public disclosure ONLY as a last resort\nAlways exhaust internal channels first UNLESS imminent danger exists."}, {"topic": "Ethics - Code Core Tenets", "front": "Engineer signs/seals a drawing they didn't prepare. Allowed?", "back": "Only if they have: (a) personally supervised the work, OR (b) thoroughly reviewed the work and accept full professional responsibility for it. 'Plan stamping' — sealing work you haven't reviewed — is professional misconduct in every jurisdiction."}, {"topic": "Ethics - Code Core Tenets", "front": "What are the core ethical theories the Code is built on?", "back": "• Utilitarianism — greatest good for the greatest number\n• Duty (deontology, Kant) — follow moral rules regardless of outcome\n• Rights theory — respect fundamental human rights\n• Virtue ethics — act as a virtuous person would\nYou don't need to memorize names, but recognize when each is being applied."}, {"topic": "Ethics - Conflicts of Interest", "front": "Define conflict of interest (COI).", "back": "Any situation where an engineer's personal interest (financial, family, friendship, or other) could improperly influence — or appear to influence — their professional judgment on behalf of their employer or client. APPEARANCE matters as much as reality."}, {"topic": "Ethics - Conflicts of Interest", "front": "3 types of conflict of interest.", "back": "1) ACTUAL — your personal interest IS influencing your judgment\n2) POTENTIAL — your interest COULD influence your judgment if circumstances change\n3) PERCEIVED / APPARENT — a reasonable observer would think your judgment is compromised\nAll three must be disclosed."}, {"topic": "Ethics - Conflicts of Interest", "front": "What is the proper response to a conflict of interest?", "back": "1) DISCLOSE fully and in writing to all affected parties\n2) Allow them to decide whether you can proceed\n3) If they consent in writing, you may proceed — sometimes\n4) If consent isn't given or COI is severe, WITHDRAW from the engagement\nNever simply ignore or hide a COI."}, {"topic": "Ethics - Conflicts of Interest", "front": "Engineer offered a gift by a contractor whose bid they're evaluating. What to do?", "back": "Decline anything beyond nominal value (e.g., a coffee or branded pen). Anything that could influence judgment (dinner, tickets, trips, cash, equity) must be refused and the offer should be documented and disclosed to the employer. Accepting creates an actual or perceived COI."}, {"topic": "Ethics - Conflicts of Interest", "front": "Can you work for two clients with competing interests?", "back": "Only with the informed written consent of BOTH clients after full disclosure of the conflict. Even then, you should consider whether you can truly serve both faithfully. If not, decline one engagement."}, {"topic": "Ethics - Other Dilemmas", "front": "Engineer disagrees with manager's technical decision. What to do?", "back": "1) Raise concerns clearly, in writing, to the manager\n2) Provide technical reasoning and propose alternatives\n3) If unresolved, escalate to higher management\n4) If public safety is at risk, escalate to the regulator\nAn engineer cannot be 'ordered' to violate the Code. The engineer signs/seals — they own the call."}, {"topic": "Ethics - Other Dilemmas", "front": "Is plagiarism by an engineer professional misconduct?", "back": "YES. Using another's work, designs, or writing without attribution violates the Code (integrity, honesty) and may also violate copyright law. This includes copying drawings, reports, or code without credit."}, {"topic": "Ethics - Other Dilemmas", "front": "Can an engineer review another engineer's work?", "back": "Yes, but you should normally NOTIFY the original engineer first (as a professional courtesy), unless doing so would compromise public safety or the review purpose (e.g., investigating misconduct). You must also be competent in that area."}, {"topic": "Ethics - Other Dilemmas", "front": "Engineer discovers a former employer's design has a safety defect. What to do?", "back": "Public safety is paramount and overrides former-employer confidentiality. 1) Notify the former employer first, allowing them to act\n2) If they don't act, report to the regulator and/or relevant authority\nConfidentiality does NOT shield public-safety hazards."}, {"topic": "Ethics - Other Dilemmas", "front": "What is 'professional misconduct'?", "back": "Defined in Regulation 941 of the PE Act (Ontario), it includes: negligence, failure to make reasonable provision for safeguarding life, health, property; failure to act to correct dangerous situations; signing/sealing work not reviewed; undertaking work outside competence; failure to disclose conflicts; breach of Code of Ethics; etc."}, {"topic": "Ethics - Other Dilemmas", "front": "Difference between negligence and professional misconduct?", "back": "NEGLIGENCE: a tort (civil wrong) — failure to meet standard of care, causing damages. Remedied through courts (lawsuit, damages). \nPROFESSIONAL MISCONDUCT: a regulatory matter under the Act — failure to meet standards expected of the profession. Remedied through PEO discipline (suspension, revocation, fines). The SAME act can be both."}, {"topic": "Law - Canadian Legal System", "front": "Two main sources of law in Canada.", "back": "1) STATUTE LAW — written law passed by Parliament (federal) or Legislatures (provincial)\n2) COMMON LAW — judge-made law based on precedent (stare decisis); applies in all provinces EXCEPT Quebec (which uses the Civil Code for private matters)."}, {"topic": "Law - Canadian Legal System", "front": "What is stare decisis?", "back": "'Let the decision stand.' The principle that courts must follow decisions of higher courts in the same jurisdiction. Creates predictability. Higher court can overturn its own past decisions; lower courts cannot overturn higher court decisions."}, {"topic": "Law - Canadian Legal System", "front": "Hierarchy of Canadian courts (simplified).", "back": "Supreme Court of Canada → Provincial Courts of Appeal → Provincial Superior Courts (e.g., Ontario Superior Court of Justice) → Provincial Courts (small claims, traffic, etc.). Federal Court system handles federal matters (immigration, IP, tax) in parallel."}, {"topic": "Law - Canadian Legal System", "front": "Civil law vs. criminal law.", "back": "CIVIL: private disputes between parties (contract breach, tort). Plaintiff sues defendant. Burden: BALANCE OF PROBABILITIES (>50%). Remedy: damages, injunction. \nCRIMINAL: state prosecutes individual for offences against society. Burden: BEYOND REASONABLE DOUBT. Remedy: fines, imprisonment."}, {"topic": "Law - Canadian Legal System", "front": "What is administrative law?", "back": "Law governing the decisions and actions of government bodies, tribunals, and self-regulatory organizations (including PEO). Allows judicial review of regulator decisions. Engineers facing PEO discipline are protected by administrative law principles (procedural fairness)."}, {"topic": "Law - Contracts", "front": "5 essential elements of a valid contract.", "back": "1) OFFER — clear, definite proposal\n2) ACCEPTANCE — unqualified agreement to the offer (mirror image)\n3) CONSIDERATION — something of value exchanged (money, goods, services, promise)\n4) INTENTION to create legal relations\n5) CAPACITY of the parties (age, sanity, authority)\nAlso: legality of purpose. No contract for illegal acts."}, {"topic": "Law - Contracts", "front": "Offer vs. invitation to treat.", "back": "OFFER: a definite promise capable of being accepted to form a contract.\nINVITATION TO TREAT: not an offer — just an invitation for others to make offers. Examples: advertisements, items in store windows, RFP/tender documents. The bidder makes the offer; the owner accepts."}, {"topic": "Law - Contracts", "front": "When is acceptance effective?", "back": "POSTAL RULE: acceptance by mail is effective when SENT (placed in mailbox), even if it never arrives.\nINSTANTANEOUS communication (phone, email, fax): effective when RECEIVED.\nAcceptance must be unconditional — any change is a COUNTER-OFFER, which kills the original offer."}, {"topic": "Law - Contracts", "front": "What is consideration? Must it be 'fair'?", "back": "Consideration is the bargained-for exchange — something of value (money, goods, services, or a promise) given by each party. Courts do NOT require it to be adequate or fair — even $1 can be valid consideration. But it must EXIST. Gratuitous promises (gifts) are generally not enforceable as contracts."}, {"topic": "Law - Contracts", "front": "Define quantum meruit.", "back": "Latin: 'as much as he has earned.' A legal remedy that pays a party the reasonable value of services provided when no enforceable contract exists, or when work was done outside the contract. Prevents unjust enrichment. Example: extra work done beyond scope at owner's request."}, {"topic": "Law - Contracts", "front": "What is privity of contract?", "back": "Only the PARTIES to a contract can sue or be sued under it. A third party generally has no rights or obligations under a contract they didn't sign — even if the contract benefits them. Important exception: tort duty of care can extend to third parties (Donoghue v. Stevenson)."}, {"topic": "Law - Contracts", "front": "What is the parol evidence rule?", "back": "When a contract is in writing and intended to be the complete agreement, outside (oral) evidence generally CANNOT be used to contradict, modify, or add to the written terms. Exceptions: fraud, mistake, ambiguity, condition precedent, collateral agreements."}, {"topic": "Law - Contracts", "front": "Statute of Frauds — what does it require?", "back": "Certain contracts must be IN WRITING to be enforceable, including:\n• Contracts for the sale of land/real property\n• Contracts that cannot be performed within 1 year\n• Guarantees (someone promising to pay another's debt)\nMost other contracts can be oral, though writing is always wiser."}, {"topic": "Law - Contracts", "front": "Types of contract breach.", "back": "MATERIAL/FUNDAMENTAL breach: goes to the root of the contract; innocent party may terminate AND sue for damages.\nMINOR breach: less serious; innocent party can sue for damages but must continue performing.\nANTICIPATORY breach: one party indicates BEFORE performance is due that they won't perform; innocent party may terminate immediately."}, {"topic": "Law - Contracts", "front": "Remedies for breach of contract.", "back": "1) DAMAGES (compensatory) — most common; put innocent party where they would have been if contract performed\n2) SPECIFIC PERFORMANCE — court orders performance (rare; usually only for unique items like land)\n3) INJUNCTION — court orders party to stop doing something\n4) RESCISSION — contract cancelled, parties restored to original positions\n5) QUANTUM MERUIT — reasonable value for work done"}, {"topic": "Law - Contracts", "front": "What is a liquidated damages clause?", "back": "A clause specifying a pre-agreed amount payable upon breach (e.g., $1,000/day delay). Enforceable if it's a GENUINE PRE-ESTIMATE of damages — not a penalty. Penalty clauses (designed to punish) are unenforceable. Common in construction contracts."}, {"topic": "Law - Contracts", "front": "What is a limitation of liability clause?", "back": "A clause that caps one party's potential damages (e.g., 'liability limited to fees paid'). Generally enforceable between sophisticated commercial parties, but may be struck down if unconscionable, hidden, or contrary to public policy. Often standard in engineering service agreements."}, {"topic": "Law - Contracts", "front": "What is an indemnification clause?", "back": "One party agrees to compensate (indemnify) the other for losses caused by specified events (usually the indemnifier's negligence or breach). Common in contracts where one party assumes risk of certain claims. Read carefully — broad indemnities can shift huge liability."}, {"topic": "Law - Contracts", "front": "Fixed price vs. cost-plus vs. unit-rate contracts.", "back": "FIXED PRICE (lump sum): one set price for defined scope. Risk on contractor. Good when scope is clear.\nCOST-PLUS: owner pays actual costs + fee/markup. Risk on owner. Used when scope is uncertain.\nUNIT RATE: pay per measured unit (e.g., $/m³ of concrete). Risk shared based on quantities.\nGMP (guaranteed maximum price): cost-plus with a cap."}, {"topic": "Law - Contracts", "front": "Qualifications-Based Selection (QBS) — what is it?", "back": "A procurement method where consultants (engineers, architects) are selected based on QUALIFICATIONS FIRST, then fees negotiated with the top-ranked firm. Engineers Canada and many regulators recommend QBS over low-bid for engineering services, because public safety benefits from competent design, not the cheapest."}, {"topic": "Law - Tort & Negligence", "front": "Define tort.", "back": "A civil wrong (other than breach of contract) that causes harm to another, for which the law provides a remedy (usually damages). Tort law exists to compensate victims and deter careless conduct. Common torts: negligence, nuisance, trespass, defamation."}, {"topic": "Law - Tort & Negligence", "front": "4 elements a plaintiff must prove to win a negligence claim.", "back": "1) DUTY OF CARE — defendant owed plaintiff a legal duty\n2) BREACH — defendant fell below the standard of care\n3) CAUSATION — the breach actually caused the harm (factual + legal causation)\n4) DAMAGES — plaintiff suffered actual, compensable harm\nAll 4 required. Plus: harm must be reasonably foreseeable."}, {"topic": "Law - Tort & Negligence", "front": "What is the 'standard of care' for a professional engineer?", "back": "What a reasonably competent engineer of the same specialty and experience level would do in the same circumstances. NOT perfection. NOT the best possible work — just reasonable. Judged by peer standards, codes, practices at the time of the work (not hindsight)."}, {"topic": "Law - Tort & Negligence", "front": "Donoghue v. Stevenson — why does it matter?", "back": "Landmark 1932 UK case (Lord Atkin's 'neighbour principle'). Established that you owe a duty of care to anyone you can reasonably foresee being affected by your actions — even without a contract. Created the modern tort of negligence. Means engineers owe a duty to third-party users of their designs (not just clients)."}, {"topic": "Law - Tort & Negligence", "front": "What is negligent misrepresentation? (Hedley Byrne)", "back": "A tort allowing recovery for PURE ECONOMIC LOSS caused by a negligent statement, where there is a 'special relationship' between the parties (one party relies on the other's expertise). Major implication for engineers: opinions, reports, certifications you give can expose you to liability to third parties who rely on them."}, {"topic": "Law - Tort & Negligence", "front": "Define duty to warn.", "back": "An ongoing obligation: even after a product is delivered or work completed, if the engineer learns of a hazard or defect that could harm users, they have a duty to warn the affected parties. This duty CANNOT be contracted away regarding public safety."}, {"topic": "Law - Tort & Negligence", "front": "What is nuisance? (Rylands v. Fletcher)", "back": "NUISANCE: unreasonable interference with another's use of their land (noise, smoke, vibration).\nRYLANDS v. FLETCHER: strict liability for non-natural use of land. If you bring something dangerous onto your land (water, fire, chemicals) that escapes and causes damage, you're liable WITHOUT proof of negligence. Major in environmental cases."}, {"topic": "Law - Tort & Negligence", "front": "Joint and several liability — what does this mean for engineers?", "back": "When multiple defendants are responsible for the same damage, each can be held liable for 100% of the damages — the plaintiff can collect from whoever has the deepest pockets. That defendant can then seek contribution from co-defendants. Bad news for engineers because they're often the most insured/solvent party — the '1% liable, 100% pay' problem."}, {"topic": "Law - Tort & Negligence", "front": "Contributory negligence — what is it?", "back": "When the plaintiff's own negligence contributed to their injury. In most provinces, damages are REDUCED proportionally (e.g., plaintiff 30% at fault → recovers 70%). Used to be a complete defence; now apportioned under Contributory Negligence Acts."}, {"topic": "Law - Tort & Negligence", "front": "Vicarious liability — explain.", "back": "An employer is liable for the negligent acts of their employees committed within the scope of employment. Why? Employers control employees, profit from their work, and have deeper pockets. Independent contractors generally don't trigger vicarious liability (key distinction)."}, {"topic": "Law - Tort & Negligence", "front": "Limitation period for tort claims (general rule in Ontario).", "back": "Basic limitation: 2 YEARS from the date the claim was DISCOVERED (or ought to have been discovered) — the 'discoverability rule.'\nUltimate limitation: 15 YEARS from the act/omission (regardless of discovery). Other provinces vary. Construction-related claims may have specific rules."}, {"topic": "Law - Tort & Negligence", "front": "Discoverability principle — explain.", "back": "The clock on a limitation period starts running when the plaintiff knew (or should reasonably have known) about: the injury, that the defendant caused it, and that a legal claim is possible. Not necessarily the date the negligent act occurred. Critical in latent-defect cases."}, {"topic": "Law - Employment & Business", "front": "Employee vs. independent contractor — why does the distinction matter?", "back": "Affects: vicarious liability, tax (CPP/EI), employment standards (overtime, vacation, severance), WSIB coverage, IP ownership of work created, and termination rights. Misclassification has major legal and tax consequences."}, {"topic": "Law - Employment & Business", "front": "Tests for employee vs. independent contractor.", "back": "Multi-factor test, no single answer:\n• CONTROL — does the employer direct how the work is done?\n• OWNERSHIP of tools/equipment\n• Chance of PROFIT / risk of LOSS\n• Integration into the business\n• Exclusivity (one employer or many clients?)\nEmployees: high control, employer's tools, no profit risk, integrated, exclusive."}, {"topic": "Law - Employment & Business", "front": "Fiduciary duty — what is it and who has it?", "back": "A duty of utmost good faith, loyalty, and to act in another's best interest. Higher than ordinary contractual duty. Owed by: directors/officers to corporation, senior employees, agents to principals, lawyers/professionals to clients. Senior engineers may owe fiduciary duties to their employer."}, {"topic": "Law - Employment & Business", "front": "Director's standard of care under the CBCA.", "back": "Directors must act: (a) honestly and in good faith with a view to the best interests of the corporation, and (b) exercise the care, diligence and skill that a reasonably prudent person would exercise in comparable circumstances. An OBJECTIVE standard, not subjective."}, {"topic": "Law - Employment & Business", "front": "Sole proprietorship vs. partnership vs. corporation — engineer-relevant differences.", "back": "SOLE PROP: unlimited personal liability; income on personal tax. Simple.\nPARTNERSHIP: partners share profits AND liability (joint & several). Each partner can bind the firm.\nCORPORATION: separate legal person; limited liability for shareholders; corporate tax rate; more complex.\nFor practising engineering as a firm, PEO requires a Certificate of Authorization (C of A)."}, {"topic": "Law - Employment & Business", "front": "What is a Certificate of Authorization (C of A)?", "back": "Required by PEO for any business entity (corporation, partnership, sole proprietorship) that offers or provides professional engineering services to the public in Ontario. Ensures a P.Eng. takes responsibility for the work. Without a C of A, the firm cannot legally provide engineering services in Ontario."}, {"topic": "Intellectual Property", "front": "Four main forms of IP in Canada.", "back": "1) PATENT — protects inventions (new, useful, non-obvious)\n2) COPYRIGHT — protects original works of authorship\n3) TRADEMARK — protects brand identifiers (names, logos, slogans)\n4) INDUSTRIAL DESIGN — protects visual appearance/shape of finished products\nAlso: trade secrets (protected by confidentiality, not registration)."}, {"topic": "Intellectual Property", "front": "Patent — duration and requirements.", "back": "DURATION: 20 years from filing date (not renewable).\nREQUIREMENTS: invention must be (1) NEW, (2) USEFUL, and (3) NON-OBVIOUS to a skilled person. Must be a patentable subject (product, composition, process, machine, improvement). Cannot patent: scientific principles, abstract theorems, mere ideas. FIRST-TO-FILE system in Canada (since 1989)."}, {"topic": "Intellectual Property", "front": "Copyright — duration and what it protects.", "back": "DURATION: author's life + 70 years (Canada raised from +50 in 2022).\nPROTECTS: original literary, dramatic, musical, artistic works — including software code, drawings, technical reports, photographs.\nAUTOMATIC on creation (no registration needed, but registration helps in disputes). Protects EXPRESSION, not the underlying idea."}, {"topic": "Intellectual Property", "front": "Trademark — duration and requirements.", "back": "DURATION: 10 years from registration, RENEWABLE indefinitely.\nPROTECTS: words, names, logos, slogans, sounds, even scents that distinguish a brand. Must be DISTINCTIVE and not confusing with existing marks. Registered with CIPO. The ™ symbol denotes unregistered; ® denotes registered."}, {"topic": "Intellectual Property", "front": "Industrial design — duration and what it protects.", "back": "DURATION: up to 15 years (10 + 5 with maintenance fee in Canada). \nPROTECTS: the visual features of a finished article — shape, configuration, pattern, ornamentation. NOT the functional aspects (those would be patentable). Example: the shape of a Coca-Cola bottle. Must be registered with CIPO."}, {"topic": "Intellectual Property", "front": "Who owns IP created by an employee?", "back": "Generally the EMPLOYER, if created within the scope of employment. Inventions made on employee's own time, with own resources, unrelated to employer's business generally belong to the EMPLOYEE. Best practice: address IP ownership explicitly in the employment contract."}, {"topic": "Intellectual Property", "front": "Who owns IP created by an independent contractor?", "back": "Generally the CONTRACTOR retains ownership of copyright, unless the contract assigns it to the client. This is opposite of the employee rule. Clients hiring consultants for design work should require WRITTEN IP assignment in the contract — without it, the consultant owns the copyright."}, {"topic": "Intellectual Property", "front": "What is a trade secret?", "back": "Confidential business information that gives competitive advantage (e.g., formulas, methods, client lists). NOT registered — protected by keeping it secret and using NDAs. Examples: Coca-Cola formula, Google's search algorithm. Lasts forever, AS LONG AS it stays secret. Reverse-engineering is generally legal."}, {"topic": "Intellectual Property", "front": "Software — what IP protects it?", "back": "COPYRIGHT — protects the source code as a literary work (automatic on creation).\nPATENTS — may protect novel functionality (algorithm/method) in some cases.\nTRADEMARKS — protect the product name.\nTRADE SECRETS — protect proprietary methods kept confidential.\nSoftware is typically protected by overlapping forms simultaneously."}, {"topic": "Professional Practice", "front": "When must an engineer use their seal?", "back": "On all final engineering documents (drawings, reports, specifications) that the engineer prepared OR personally took responsibility for. The seal certifies that the engineer prepared or reviewed the work and accepts professional responsibility for it. Required by Regulation 941 in Ontario."}, {"topic": "Professional Practice", "front": "Can you seal preliminary or draft documents?", "back": "Generally NO. Preliminary, draft, or 'not for construction' documents should NOT be sealed. Some jurisdictions allow sealing with explicit notation like 'PRELIMINARY — NOT FOR CONSTRUCTION.' Sealing implies the work is ready to be used for its intended engineering purpose."}, {"topic": "Professional Practice", "front": "Engineer signs/seals a drawing prepared by an unlicensed person. Allowed?", "back": "Only if the engineer has personally supervised the work OR thoroughly reviewed it and accepts professional responsibility. The reviewer must be competent in the subject area. Merely 'rubber-stamping' work you didn't review is professional misconduct."}, {"topic": "Professional Practice", "front": "Who has responsibility for as-built drawings?", "back": "Generally the contractor produces as-builts (showing what was actually built vs. designed). The engineer of record may be asked to review/certify them, but is only responsible for their own work. As-builts should clearly note who prepared them and the limits of review."}, {"topic": "Professional Practice", "front": "How long should an engineer keep project records?", "back": "At MINIMUM, the length of any applicable limitation period — in Ontario, 15 years (ultimate limitation under the Limitations Act). Best practice: keep design records for the useful life of the work, especially safety-critical documents. Records should be stored in a usable, retrievable format."}, {"topic": "Professional Practice", "front": "What is due diligence (in engineering practice)?", "back": "Taking all reasonable steps to identify, prevent, and mitigate foreseeable risks before they cause harm. Three concepts:\n• FORESEEABILITY — could a reasonable person predict the harm?\n• PREVENTABILITY — could it have been prevented?\n• CONTROLLABILITY — was it within the engineer's control?\nDue diligence is a defence against negligence and OHS prosecutions."}, {"topic": "Professional Practice", "front": "Risk management — 4 strategies.", "back": "1) AVOID — eliminate the activity causing the risk\n2) REDUCE / MITIGATE — design controls to lower probability or severity\n3) TRANSFER — shift risk to another party (insurance, contract, indemnification)\n4) RETAIN / ACCEPT — knowingly accept the risk (typically low-impact risks)\nRisk = probability × consequence. Manage to acceptable, not zero."}, {"topic": "Professional Practice", "front": "Hazard vs. risk — what's the difference?", "back": "HAZARD: a source of potential harm (e.g., high voltage, working at height, toxic chemical).\nRISK: the probability that a hazard will result in harm × the severity of that harm.\nHazards exist independently; risk depends on exposure and controls."}, {"topic": "Professional Practice", "front": "Professional Errors & Omissions (E&O) Insurance — what does it cover?", "back": "Covers claims arising from professional NEGLIGENCE — failure to meet the standard of care causing financial loss. Typically covers legal defence costs + damages. Does NOT cover intentional misconduct, criminal acts, or contractual liability beyond common-law negligence. Has a RETROACTIVE DATE — claims must arise from work done after that date."}, {"topic": "Professional Practice", "front": "Commercial General Liability (CGL) vs. E&O Insurance.", "back": "CGL: covers BODILY INJURY and PROPERTY DAMAGE caused by your operations (slip-and-fall, fire damage). Excludes professional services.\nE&O: covers PROFESSIONAL NEGLIGENCE (bad design, missed calculation, wrong advice). Engineers need BOTH — they cover different exposures."}, {"topic": "Professional Practice", "front": "Is E&O insurance mandatory for P.Eng.s in Ontario?", "back": "Not for individual employees of a corporation that holds adequate insurance. However, engineers offering services directly to the public must either carry insurance or notify their clients in writing that they don't carry insurance. PEO requires disclosure either way."}, {"topic": "Professional Practice", "front": "ISO 9000 / Quality Management — basic concept.", "back": "International standards for QUALITY MANAGEMENT SYSTEMS. Key concept: 'Say what you do, do what you say, prove it.' Documented procedures, consistent processes, continuous improvement. Not about product quality directly — about the SYSTEM that produces consistent outputs. Common in manufacturing and increasingly in engineering services."}, {"topic": "Professional Practice", "front": "Engineer relies on data prepared by another engineer/consultant. Their responsibility?", "back": "The engineer who incorporates another's work into their own design retains responsibility to: (a) confirm the other engineer is qualified, (b) understand the limitations of the data, (c) verify reasonableness of inputs. You can't outsource professional responsibility — but you can rely on qualified specialists if you exercise due diligence."}, {"topic": "Environmental & Safety", "front": "Three legal frameworks affecting environmental responsibility.", "back": "1) FEDERAL: Canadian Environmental Protection Act (CEPA), Fisheries Act\n2) PROVINCIAL: Environmental Protection Act (Ontario), Water Resources Act, etc.\n3) MUNICIPAL: zoning, noise, waste bylaws\nEngineers must consider all three levels. Environmental Impact Assessment may be required for major projects."}, {"topic": "Environmental & Safety", "front": "Sustainable development — definition.", "back": "Brundtland Commission (1987): 'Development that meets the needs of the present without compromising the ability of future generations to meet their own needs.' Three pillars: environmental, economic, social (the 'triple bottom line'). Engineers Canada considers it a core ethical principle."}, {"topic": "Environmental & Safety", "front": "Polluter pays principle.", "back": "The party responsible for producing pollution bears the costs of managing it to prevent harm to human health and the environment. Embedded in Canadian environmental law. Engineers who design or approve polluting systems may share liability."}, {"topic": "Environmental & Safety", "front": "Occupational Health and Safety Act (Ontario) — basic engineer obligations.", "back": "The OHSA imposes duties on:\n• EMPLOYERS — provide safe workplace, training, equipment\n• SUPERVISORS — ensure workers comply with safety procedures\n• WORKERS — work safely, report hazards\nEngineers are often subject to all three depending on role. The Internal Responsibility System (IRS) is the Act's foundation: everyone has a safety role."}, {"topic": "Environmental & Safety", "front": "What is the 'right to refuse unsafe work'?", "back": "Under OHSA, workers (including engineers) have the right to refuse work they reasonably believe is unsafe. Cannot be punished for refusing in good faith. Process: notify supervisor → investigation → if unresolved, contact MOL inspector. Different rules for some 'essential' roles (police, fire, hospital workers)."}, {"topic": "Environmental & Safety", "front": "Difference between Acts, Regulations, Codes, and Standards.", "back": "ACT: passed by legislature; broad principles & authority.\nREGULATION: detailed rules made under an Act (e.g., Reg 941 under PE Act); has legal force.\nCODE: prescriptive rules, often referenced by regulation (e.g., Building Code, Fire Code).\nSTANDARD: technical specifications (CSA, ISO); voluntary unless incorporated by reference. Hierarchy: Acts > Regulations > Codes > Standards."}], "topics": ["Professionalism", "Ethics - Code Core Tenets", "Ethics - Conflicts of Interest", "Ethics - Other Dilemmas", "Law - Canadian Legal System", "Law - Contracts", "Law - Tort & Negligence", "Law - Employment & Business", "Intellectual Property", "Professional Practice", "Environmental & Safety"]}</script>
+
+<script>
+  const DATA = JSON.parse(document.getElementById('dataScript').textContent);
+  const STORAGE_KEY = 'nppe_flashcard_ratings_v1';
+
+  // State
+  let allCards = DATA.cards.map((c, i) => ({ ...c, id: i }));
+  let topics = DATA.topics;
+  let displayed = [];
+  let currentIndex = 0;
+  let ratings = loadRatings();
+
+  function loadRatings() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+  function saveRatings() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(ratings)); }
+    catch (e) {}
+  }
+
+  // Populate topic select
+  const topicSelect = document.getElementById('topic');
+  topics.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t;
+    opt.textContent = t;
+    topicSelect.appendChild(opt);
+  });
+
+  function rebuildDisplayed() {
+    const topic = topicSelect.value;
+    const filter = document.getElementById('filter').value;
+    displayed = allCards.filter(c => {
+      if (topic !== '__all__' && c.topic !== topic) return false;
+      const r = ratings[c.id];
+      if (filter === 'unrated') return !r;
+      if (filter === 'know') return r === 'know';
+      if (filter === 'unsure') return r === 'unsure';
+      if (filter === 'dontknow') return r === 'dontknow';
+      return true;
+    });
+    currentIndex = 0;
+    render();
+  }
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+
+  function render() {
+    const card = document.getElementById('card');
+    const wrap = document.getElementById('cardWrap');
+    card.classList.remove('flipped');
+
+    if (displayed.length === 0) {
+      wrap.style.display = 'none';
+      let empty = document.getElementById('emptyState');
+      if (!empty) {
+        empty = document.createElement('div');
+        empty.id = 'emptyState';
+        empty.className = 'empty-state';
+        empty.textContent = 'No cards match the current filter.';
+        document.querySelector('.stage').appendChild(empty);
+      }
+      empty.style.display = 'block';
+      document.getElementById('progress').textContent = '0 / 0';
+      updateStatsBar();
+      return;
+    } else {
+      wrap.style.display = '';
+      const empty = document.getElementById('emptyState');
+      if (empty) empty.style.display = 'none';
+    }
+
+    const c = displayed[currentIndex];
+    document.getElementById('frontTopic').textContent = c.topic;
+    document.getElementById('backTopic').textContent = c.topic + ' · Answer';
+    document.getElementById('frontText').textContent = c.front;
+    document.getElementById('backText').textContent = c.back;
+    document.getElementById('frontNumber').textContent = `#${c.id + 1} of ${allCards.length}`;
+    document.getElementById('backNumber').textContent = `#${c.id + 1} of ${allCards.length}`;
+    document.getElementById('progress').textContent = `${currentIndex + 1} / ${displayed.length}`;
+    updateStatsBar();
+    updateRateButtons();
+  }
+
+  function updateStatsBar() {
+    const total = allCards.length;
+    let know = 0, unsure = 0, dontknow = 0;
+    for (const id in ratings) {
+      if (ratings[id] === 'know') know++;
+      else if (ratings[id] === 'unsure') unsure++;
+      else if (ratings[id] === 'dontknow') dontknow++;
+    }
+    document.getElementById('segKnow').style.width = (know / total * 100) + '%';
+    document.getElementById('segUnsure').style.width = (unsure / total * 100) + '%';
+    document.getElementById('segDontknow').style.width = (dontknow / total * 100) + '%';
+  }
+
+  function updateRateButtons() {
+    if (displayed.length === 0) return;
+    const c = displayed[currentIndex];
+    const r = ratings[c.id];
+    ['rateKnow', 'rateUnsure', 'rateDontknow'].forEach(id => {
+      document.getElementById(id).style.opacity = '1';
+    });
+    if (r === 'know') document.getElementById('rateKnow').style.opacity = '0.5';
+    if (r === 'unsure') document.getElementById('rateUnsure').style.opacity = '0.5';
+    if (r === 'dontknow') document.getElementById('rateDontknow').style.opacity = '0.5';
+  }
+
+  function flip() {
+    if (displayed.length === 0) return;
+    document.getElementById('card').classList.toggle('flipped');
+  }
+
+  function next() {
+    if (displayed.length === 0) return;
+    currentIndex = (currentIndex + 1) % displayed.length;
+    render();
+  }
+
+  function prev() {
+    if (displayed.length === 0) return;
+    currentIndex = (currentIndex - 1 + displayed.length) % displayed.length;
+    render();
+  }
+
+  function rate(value) {
+    if (displayed.length === 0) return;
+    const c = displayed[currentIndex];
+    ratings[c.id] = value;
+    saveRatings();
+    updateStatsBar();
+    updateRateButtons();
+    setTimeout(next, 220);
+  }
+
+  // Event listeners
+  document.getElementById('cardWrap').addEventListener('click', flip);
+  document.getElementById('next').addEventListener('click', next);
+  document.getElementById('prev').addEventListener('click', prev);
+  document.getElementById('rateKnow').addEventListener('click', e => { e.stopPropagation(); rate('know'); });
+  document.getElementById('rateUnsure').addEventListener('click', e => { e.stopPropagation(); rate('unsure'); });
+  document.getElementById('rateDontknow').addEventListener('click', e => { e.stopPropagation(); rate('dontknow'); });
+
+  document.getElementById('shuffle').addEventListener('click', () => {
+    shuffle(displayed);
+    currentIndex = 0;
+    render();
+  });
+  document.getElementById('reset').addEventListener('click', () => {
+    if (confirm('Reset all progress (ratings will be cleared)?')) {
+      ratings = {};
+      saveRatings();
+      rebuildDisplayed();
+    }
+  });
+  topicSelect.addEventListener('change', rebuildDisplayed);
+  document.getElementById('filter').addEventListener('change', rebuildDisplayed);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') return;
+    if (e.key === ' ') { e.preventDefault(); flip(); }
+    else if (e.key === 'ArrowRight') next();
+    else if (e.key === 'ArrowLeft') prev();
+    else if (e.key === '1') rate('dontknow');
+    else if (e.key === '2') rate('unsure');
+    else if (e.key === '3') rate('know');
+    else if (e.key === 's' || e.key === 'S') {
+      shuffle(displayed); currentIndex = 0; render();
+    }
+  });
+
+  // Initial render
+  rebuildDisplayed();
+</script>
+</body>
+</html>
