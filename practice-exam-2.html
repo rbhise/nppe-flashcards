@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NPPE Practice Exam — Half 2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root {
+    --bg: #f4f1ea;
+    --paper: #fffdf7;
+    --ink: #1a1a1a;
+    --ink-soft: #555;
+    --accent: #8b3a3a;
+    --accent-soft: #c9a47a;
+    --line: #d8d1c0;
+    --back-bg: #faf3e0;
+    --shadow: rgba(60, 40, 20, 0.12);
+    --shadow-deep: rgba(60, 40, 20, 0.22);
+    --correct: #2d6a2f;
+    --correct-bg: #e6f0e2;
+    --wrong: #a33;
+    --wrong-bg: #f5e2e2;
+    --flag: #d4a017;
+    --flag-bg: #fef5d8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100%; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(139, 58, 58, 0.04), transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(201, 164, 122, 0.06), transparent 50%);
+    color: var(--ink);
+    font-family: Georgia, 'Iowan Old Style', serif;
+    padding: 16px 12px 80px;
+    line-height: 1.5;
+  }
+
+  /* Sticky header bar */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px var(--shadow);
+    max-width: 800px;
+    margin: 0 auto 16px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .topbar .title {
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 14px;
+    font-family: 'Iowan Old Style', Georgia, serif;
+  }
+  .topbar .progress-info {
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .topbar .timer {
+    margin-left: auto;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    font-size: 16px;
+    padding: 4px 10px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--back-bg);
+  }
+  .topbar .timer.warning { color: #b08400; border-color: #e0d090; background: var(--flag-bg); }
+  .topbar .timer.critical { color: var(--wrong); border-color: #d4a8a8; background: var(--wrong-bg); }
+
+  .container { max-width: 800px; margin: 0 auto; }
+
+  /* Question card */
+  .question {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 24px 30px;
+    box-shadow: 0 1px 2px var(--shadow), 0 12px 28px -8px var(--shadow-deep);
+    margin-bottom: 14px;
+  }
+  @media (max-width: 600px) {
+    .question { padding: 18px 16px; }
+  }
+
+  .qmeta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .qnumber {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .qtopic {
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+
+  .stem {
+    font-size: clamp(14px, 1.9vw, 16px);
+    font-weight: 500;
+    line-height: 1.55;
+    color: var(--ink);
+    margin-bottom: 18px;
+  }
+
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .option {
+    display: flex;
+    align-items: flex-start;
+    padding: 11px 14px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--paper);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-size: clamp(13px, 1.7vw, 14px);
+    line-height: 1.5;
+  }
+  .option:hover:not(.locked) {
+    border-color: var(--accent);
+    background: #faf6ee;
+  }
+  .option-letter {
+    font-weight: 700;
+    color: var(--accent);
+    margin-right: 12px;
+    min-width: 20px;
+    font-family: Georgia, serif;
+  }
+  .option.selected {
+    border-color: var(--accent);
+    background: #faf6ee;
+  }
+  .option.locked { cursor: default; }
+  .option.locked.correct {
+    border-color: var(--correct);
+    background: var(--correct-bg);
+  }
+  .option.locked.correct .option-letter { color: var(--correct); }
+  .option.locked.wrong {
+    border-color: var(--wrong);
+    background: var(--wrong-bg);
+  }
+  .option.locked.wrong .option-letter { color: var(--wrong); }
+  .option.locked.dimmed { opacity: 0.55; }
+
+  .feedback {
+    margin-top: 16px;
+    padding: 14px 16px;
+    border-radius: 4px;
+    border-left: 3px solid var(--accent);
+    background: var(--back-bg);
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    display: none;
+  }
+  .feedback.show { display: block; }
+  .feedback .verdict {
+    font-weight: 700;
+    margin-bottom: 8px;
+    font-family: Georgia, serif;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+  }
+  .feedback.correct { border-left-color: var(--correct); background: var(--correct-bg); }
+  .feedback.correct .verdict { color: var(--correct); }
+  .feedback.wrong { border-left-color: var(--wrong); background: var(--wrong-bg); }
+  .feedback.wrong .verdict { color: var(--wrong); }
+
+  /* Navigation */
+  .nav {
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  button {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 9px 16px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-weight: 600;
+  }
+  button:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  button.primary {
+    background: var(--accent);
+    color: var(--paper);
+    border-color: var(--accent);
+  }
+  button.primary:hover:not(:disabled) {
+    background: #6e2d2d;
+    color: var(--paper);
+  }
+  button.flag {
+    background: var(--paper);
+    border-color: var(--line);
+  }
+  button.flag.flagged {
+    background: var(--flag-bg);
+    color: #b08400;
+    border-color: var(--flag);
+  }
+  button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* Question grid (overview/jump) */
+  .grid-toggle {
+    text-align: center;
+    margin: 16px 0 8px;
+  }
+  .grid-toggle button {
+    font-size: 12px;
+    padding: 6px 14px;
+  }
+  .qgrid {
+    display: none;
+    grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+    gap: 6px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px var(--shadow);
+  }
+  .qgrid.show { display: grid; }
+  .qgrid .qcell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--paper);
+    transition: all 0.1s ease;
+    font-variant-numeric: tabular-nums;
+  }
+  .qcell:hover { border-color: var(--accent); }
+  .qcell.answered { background: #e8e2d0; color: var(--ink); }
+  .qcell.flagged { background: var(--flag-bg); border-color: var(--flag); color: #b08400; }
+  .qcell.current { box-shadow: 0 0 0 2px var(--accent); }
+  .qcell.correct { background: var(--correct-bg); border-color: var(--correct); color: var(--correct); }
+  .qcell.wrong { background: var(--wrong-bg); border-color: var(--wrong); color: var(--wrong); }
+
+  /* Submit area */
+  .submit-area {
+    text-align: center;
+    margin: 20px 0;
+    padding: 16px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+  }
+  .submit-area .summary {
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin-bottom: 12px;
+  }
+  .submit-area button {
+    font-size: 15px;
+    padding: 12px 28px;
+  }
+
+  /* Results */
+  .results {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 28px;
+    box-shadow: 0 1px 2px var(--shadow), 0 12px 28px -8px var(--shadow-deep);
+    text-align: center;
+    display: none;
+    margin-bottom: 20px;
+  }
+  .results.show { display: block; }
+  .score-big {
+    font-size: clamp(48px, 10vw, 72px);
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    font-family: 'Iowan Old Style', Georgia, serif;
+  }
+  .score-label {
+    font-size: 14px;
+    color: var(--ink-soft);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 4px;
+    margin-bottom: 20px;
+  }
+  .pass-fail {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 3px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .pass-fail.pass { background: var(--correct-bg); color: var(--correct); border: 1px solid var(--correct); }
+  .pass-fail.fail { background: var(--wrong-bg); color: var(--wrong); border: 1px solid var(--wrong); }
+  .verdict-text {
+    font-size: 14px;
+    font-style: italic;
+    color: var(--ink);
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  .breakdown {
+    text-align: left;
+    margin: 18px 0;
+    padding: 16px;
+    background: var(--back-bg);
+    border-radius: 4px;
+  }
+  .breakdown h3 {
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    font-size: 13px;
+    border-bottom: 1px solid var(--line);
+  }
+  .breakdown-row:last-child { border-bottom: none; }
+  .breakdown-row .label { color: var(--ink-soft); }
+  .breakdown-row .score {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+  .breakdown-row .score.good { color: var(--correct); }
+  .breakdown-row .score.mid { color: #b08400; }
+  .breakdown-row .score.weak { color: var(--wrong); }
+
+  /* Start screen */
+  .start-screen {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 36px 32px;
+    box-shadow: 0 1px 2px var(--shadow), 0 12px 28px -8px var(--shadow-deep);
+    text-align: center;
+    max-width: 700px;
+    margin: 40px auto 0;
+  }
+  .start-screen h1 {
+    font-size: 28px;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .start-screen h1 .accent { color: var(--accent); font-style: italic; }
+  .start-screen .start-subtitle {
+    font-size: 13px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 22px;
+  }
+  .start-screen .start-info {
+    text-align: left;
+    background: var(--back-bg);
+    padding: 18px 22px;
+    border-radius: 4px;
+    margin: 18px 0 24px;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .start-screen button {
+    font-size: 15px;
+    padding: 12px 32px;
+  }
+
+  /* In-page confirm modal (replaces native confirm() which is unreliable in mobile in-app browsers) */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 24px 28px;
+    max-width: 440px;
+    width: 100%;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  }
+  .modal h2 {
+    font-family: 'Iowan Old Style', Georgia, serif;
+    font-size: 18px;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .modal p {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--ink);
+    margin-bottom: 18px;
+  }
+  .modal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .modal-buttons button {
+    min-width: 100px;
+  }
+</style>
+</head>
+<body>
+
+<div id="startScreen" class="start-screen">
+  <h1>NPPE <span class="accent">Practice Exam (Half 2)</span></h1>
+  <div class="start-subtitle">Timed practice exam · simulated conditions</div>
+  <div class="start-info">
+    <b>Format:</b> 50 questions, multiple choice (A-D)<br>
+    <b>Time limit:</b> 1 hour 7 min 30 sec<br>
+    <b>Scoring:</b> 1 point each, no penalty for guessing — answer everything<br>
+    <b>During the exam:</b> you can flag questions to revisit, navigate freely, and change answers<br>
+    <b>After submitting:</b> you'll see your score, performance breakdown, and full explanations for every question<br>
+    <b>Pass mark:</b> ~65% (the real NPPE threshold)
+  </div>
+  <p style="font-size:13px; color:var(--ink-soft); margin-bottom:18px; font-style:italic;">
+    Make sure you have an uninterrupted block of time. The timer starts when you begin.
+  </p>
+  <button class="primary" onclick="startExam()">Start Exam</button>
+</div>
+
+<div id="examUI" style="display:none;">
+
+  <div class="topbar">
+    <span class="title">NPPE Practice</span>
+    <span class="progress-info" id="progressInfo">Question 1 of 50</span>
+    <span class="timer" id="timer">1 hour 7 min 30 sec</span>
+  </div>
+
+  <div class="grid-toggle">
+    <button onclick="toggleGrid()" id="gridToggle">Show question overview</button>
+  </div>
+
+  <div class="qgrid" id="qgrid"></div>
+
+  <div class="container" id="examContent"></div>
+
+  <div class="submit-area">
+    <div class="summary" id="submitSummary">0 answered · 0 flagged · 50 remaining</div>
+    <button class="primary" onclick="confirmSubmit()">Submit Exam</button>
+  </div>
+
+</div>
+
+<div id="resultsScreen" class="container" style="display:none;">
+  <div class="results show">
+    <div class="score-big" id="finalScore">0/50</div>
+    <div class="score-label" id="finalPercent">0%</div>
+    <div id="passFailBadge"></div>
+    <div class="verdict-text" id="verdictText"></div>
+
+    <div class="breakdown">
+      <h3>Performance by Topic</h3>
+      <div id="topicBreakdown"></div>
+    </div>
+
+    <div class="breakdown">
+      <h3>Performance by Question Type</h3>
+      <div id="typeBreakdown"></div>
+    </div>
+
+    <div style="margin-top:20px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+      <button class="primary" onclick="showReview()">Review All Questions</button>
+      <button onclick="location.reload()">Retake Exam</button>
+    </div>
+  </div>
+</div>
+
+<div id="reviewScreen" style="display:none;">
+  <div class="topbar">
+    <span class="title">Exam Review</span>
+    <span class="progress-info" id="reviewProgress">Question 1 of 50</span>
+    <button onclick="showResultsFromReview()" style="margin-left:auto; font-size:12px; padding:5px 10px;">Back to results</button>
+  </div>
+  <div class="grid-toggle">
+    <button onclick="toggleGrid()" id="gridToggle2">Show question overview</button>
+  </div>
+  <div class="qgrid" id="qgridReview"></div>
+  <div class="container" id="reviewContent"></div>
+</div>
+
+<!-- In-page confirm modal (works on mobile in-app browsers where native confirm() may not) -->
+<div id="modalBackdrop" class="modal-backdrop" onclick="hideModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h2 id="modalTitle">Confirm</h2>
+    <p id="modalMessage"></p>
+    <div class="modal-buttons">
+      <button onclick="hideModal()">Cancel</button>
+      <button class="primary" id="modalConfirmBtn">Submit</button>
+    </div>
+  </div>
+</div>
+
+<script id="dataScript" type="application/json">{"questions": [{"id": 1, "topic": "I. Professionalism", "type": "Direct recall", "stem": "The Iron Ring received by Canadian engineering graduates during the Ritual of the Calling of an Engineer is BEST described as:", "options": ["A licence to practise professional engineering in any Canadian province.", "A symbol of the engineer's ethical obligation, with no legal status.", "Proof of graduation from a CEAB-accredited engineering program.", "Evidence of completion of the Engineer-in-Training period."], "answer": 1, "explanation": "The Iron Ring is a symbol of obligation, worn on the working pinky of the dominant hand. It carries NO legal status — it is not a licence, not proof of accreditation, and not proof of EIT status.\n\nThe ritual was created in 1925 with text by Rudyard Kipling. Geoscientists wear an analogous Earth Ring.\n\nImportantly: receiving the ring does NOT permit you to practice engineering or call yourself a P.Eng. — only provincial licensure does that."}, {"id": 2, "topic": "I. Professionalism", "type": "Direct recall", "stem": "Engineering programs at Canadian universities are accredited by:", "options": ["The provincial engineering regulators directly (e.g., PEO, APEGA).", "The Canadian Engineering Accreditation Board (CEAB), a function of Engineers Canada.", "The federal Ministry of Education.", "Universities Canada, the umbrella body of Canadian universities."], "answer": 1, "explanation": "CEAB (Canadian Engineering Accreditation Board) is a function of Engineers Canada. It accredits ENGINEERING EDUCATION PROGRAMS at universities — it does not license individual engineers (provincial regulators do that).\n\nGraduates of CEAB-accredited programs satisfy the academic requirement for licensure in any Canadian province without further academic assessment. Graduates of non-accredited programs (including most foreign degrees) may need to write technical exams to demonstrate equivalence.\n\nA is wrong — provincial regulators license individuals; they don't accredit programs.\nC is wrong — education is provincial in Canada; there is no federal ministry with this role.\nD is wrong — Universities Canada is an advocacy body, not an accreditor."}, {"id": 3, "topic": "I. Professionalism", "type": "Categorization", "stem": "Which of the following statements about the practice of engineering in Canada is TRUE?", "options": ["Anyone with an engineering degree can call themselves a Professional Engineer.", "Engineering can be practiced by anyone, but only licensed engineers may use the title 'P.Eng.'", "Both the title 'P.Eng.' and the practice of professional engineering are restricted by provincial Acts.", "Provincial Acts protect only the title; the practice is open to anyone competent."], "answer": 2, "explanation": "Canadian provincial PE Acts protect BOTH the title AND the practice of professional engineering. This is called 'right-to-title AND right-to-practice' protection.\n\n• TITLE protection — only licensed P.Eng.s can call themselves 'Professional Engineer' or use 'P.Eng.'\n• PRACTICE protection — only licensed P.Eng.s (or those under their supervision, where applicable) can perform professional engineering services as defined in the Act\n\nNote: this is different from many U.S. jurisdictions, where engineering can be practiced by anyone but only registered Professional Engineers may use the title. Canada takes the stronger position.\n\nA is wrong — a degree alone doesn't confer the right to use the title.\nB and D are wrong — the practice IS restricted, not just the title."}, {"id": 4, "topic": "I. Professionalism", "type": "Best-answer", "stem": "An engineering graduate is working as an Engineer-in-Training (EIT) under the supervision of a P.Eng. The EIT's status MOST accurately means:", "options": ["The EIT is fully licensed to perform engineering work independently for a limited initial period.", "The EIT can perform engineering work only under the supervision of a licensed P.Eng., who takes professional responsibility for the work.", "The EIT may use the title 'P.Eng.' but cannot seal drawings.", "The EIT has no professional obligations until they become fully licensed."], "answer": 1, "explanation": "An EIT (Engineer-in-Training, also called Member-in-Training in some jurisdictions) is a person enrolled with the regulator who is accumulating the work experience required for licensure. EITs work UNDER THE SUPERVISION of a licensed P.Eng., who takes professional responsibility for the work.\n\nEITs:\n• Cannot use the title 'P.Eng.' (and many regulators restrict the use of 'Engineer' alone)\n• Cannot seal drawings (the supervising P.Eng. seals)\n• ARE bound by the Code of Ethics and other professional obligations\n• Are tracking experience toward eventual licensure\n\nA is wrong — EITs are not independently licensed.\nC is wrong — EITs may NOT use 'P.Eng.'\nD is wrong — EITs are bound by professional obligations from the moment they enroll."}, {"id": 5, "topic": "I. Professionalism", "type": "Best-answer", "stem": "The duty of an engineer to maintain competence throughout their career is BEST supported by which of the following activities?", "options": ["Reading the engineering newspaper occasionally.", "Periodic participation in continuing professional development (CPD) programs, technical conferences, and current literature relevant to one's practice areas.", "Renewing the licence annually with the regulator.", "Maintaining membership in an engineering advocacy organization."], "answer": 1, "explanation": "Maintaining competence is an ongoing professional obligation. Most Canadian regulators now require — or strongly recommend — structured continuing professional development (CPD): a documented program of activities including formal courses, conferences, technical reading, mentoring, and structured self-study.\n\nMany provinces have mandatory CPD or 'Practice Effectiveness Indicators' programs with annual reporting requirements.\n\nA — informal reading is part of staying current but not, by itself, structured CPD.\nC — renewing a licence is an administrative act; it does not demonstrate competence.\nD — advocacy organization membership doesn't equate to maintaining technical competence."}, {"id": 6, "topic": "II. Ethics", "type": "Ethical scenario", "stem": "An engineer working in a manufacturing plant becomes aware that the plant's discharge into a nearby waterway exceeds permitted environmental limits. The company's environmental manager dismisses the concern and instructs the engineer not to escalate. What should the engineer do?", "options": ["Comply with the environmental manager — environmental matters are not the engineer's primary responsibility.", "Document the concern, escalate within the organization, and if not addressed, report to the appropriate environmental authority.", "Reduce the engineer's own role in the discharge activities to distance themselves from any wrongdoing.", "Resign from the company to avoid being implicated in the violation."], "answer": 1, "explanation": "Environmental harm is part of the duty to the public (welfare and environment). It overrides employer loyalty. The proper sequence is the same as for public-safety issues:\n\n1. Document the concern in writing\n2. Escalate within the organization\n3. Report to the appropriate environmental authority (Ministry of Environment, or federal authority under CEPA or the Fisheries Act if applicable)\n4. Public disclosure as last resort\n\nA is wrong — environmental responsibility is shared by all engineers, not just specialists.\nC is wrong — withdrawing from the activity doesn't address the ongoing harm.\nD is wrong — resigning leaves the harm in place. The duty to report persists regardless of employment."}, {"id": 7, "topic": "II. Ethics", "type": "Ethical scenario", "stem": "An engineer leaves their job at a consulting firm to work for a competitor. The engineer signed a non-disclosure agreement covering proprietary methods of their former employer. While at the new firm, the engineer realizes that the former employer's product, still being sold, has a safety defect that could harm users. What should the engineer do?", "options": ["Honour the NDA — the matter is no longer the engineer's responsibility.", "Notify the former employer of the defect, and if they fail to act, report the safety concern to the relevant authority.", "Wait until the NDA expires before taking action.", "Share the information with the new employer to use as a competitive advantage."], "answer": 1, "explanation": "Public safety is paramount and overrides confidentiality obligations, including those in NDAs. Confidentiality clauses are unenforceable to the extent they would shield public-safety hazards.\n\nProper sequence:\n1. Notify the former employer first, giving them a reasonable opportunity to act\n2. If they don't act, escalate to the regulator or relevant authority\n\nA is wrong — NDAs cannot shield safety hazards.\nC is wrong — delaying while people remain at risk is unethical.\nD is wrong — exploiting a safety defect for commercial advantage is unconscionable and breaches multiple Code provisions."}, {"id": 8, "topic": "II. Ethics", "type": "Ethical scenario", "stem": "An engineer is hired by a building owner to provide a second opinion on a structural design prepared by another P.Eng. The original engineer has not been informed about the review. What should the second engineer do?", "options": ["Refuse to do any review of another engineer's work without their consent.", "Proceed with the review but notify the original engineer as a professional courtesy, unless doing so would compromise the purpose of the review.", "Proceed without notification — the client has the right to keep the review private.", "Notify the original engineer and refuse to proceed unless they agree."], "answer": 1, "explanation": "Reviewing another engineer's work is permitted and common. The Code generally requires the reviewing engineer to NOTIFY the original engineer as a professional courtesy — but does NOT require consent.\n\nNotification may be set aside if it would compromise the purpose of the review (e.g., in misconduct investigations, litigation contexts, or where the original engineer might destroy evidence). The reviewer must also be competent in the subject area.\n\nA is wrong — there's no blanket prohibition on peer review.\nC is wrong — notification is the professional norm; ignoring it shows lack of courtesy.\nD is wrong — consent isn't required; the original engineer cannot veto a legitimate review."}, {"id": 9, "topic": "II. Ethics", "type": "Best-answer", "stem": "When considering the role of engineers regarding sustainable development, the modern Canadian view is BEST described as:", "options": ["Compliance with applicable environmental laws is sufficient.", "Engineers should avoid any project with any environmental impact.", "Engineers should consider and promote the principles of sustainable development as part of their professional duty to society.", "Sustainable development is a marketing concern, not a professional one."], "answer": 2, "explanation": "Engineers Canada and provincial regulators increasingly frame environmental responsibility as part of the duty to society. Engineers are expected to consider sustainable development — meeting present needs without compromising future generations — and to flag environmental concerns even where not strictly required by law.\n\nA is wrong — mere legal compliance is a FLOOR, not the ethical standard. Codes typically require more than minimum legal compliance.\nB is wrong — virtually every engineering project has SOME environmental impact; the goal is responsible management, not avoidance.\nD is wrong — sustainable development is a substantive professional concern, not just marketing."}, {"id": 10, "topic": "II. Ethics", "type": "Ethical scenario", "stem": "An engineer overseeing construction notices that a subcontractor is using materials that do not meet the specifications called for in the engineer's design. The substituted materials are visually similar but inferior. The engineer's MOST APPROPRIATE response is to:", "options": ["Ignore the substitution if the visual appearance is acceptable.", "Document the deviation and bring it to the immediate attention of the contractor and the owner/client.", "Personally direct the subcontractor to replace the materials.", "Adjust the specifications retroactively to match what was actually installed."], "answer": 1, "explanation": "Specifications exist for a reason — inferior materials may compromise safety, durability, or performance. The engineer's role is to document deviations and notify those with authority to act:\n• The contractor (to correct the issue at their cost, if the substitution is unauthorized)\n• The owner/client (who has contractual rights to the specified work)\n\nAdjusting the spec retroactively to match substandard work would be dishonest and could constitute fraud or misrepresentation.\n\nA is wrong — visual similarity doesn't substitute for compliance with technical specifications.\nC is wrong — the engineer typically lacks contractual authority to direct the subcontractor directly; the proper channel is via the contractor and owner.\nD is wrong — retroactively rewriting specs to cover up substandard work is misconduct."}, {"id": 11, "topic": "II. Ethics", "type": "Categorization", "stem": "Which of the following is NOT a typical element of an engineer's duty to their employer under the Code of Ethics?", "options": ["Loyal and faithful service in the employer's interest.", "Confidentiality regarding the employer's proprietary information.", "Acting as the employer's faithful agent.", "Concealing any errors made by the engineer that might embarrass the employer."], "answer": 3, "explanation": "The duty to the employer requires loyalty, faithful service, confidentiality, and acting as a faithful agent. It does NOT include concealing errors — engineers are required by the Code to be honest about their work, including mistakes.\n\nConcealing errors could:\n• Breach the duty of honesty\n• Endanger public safety if the error has safety implications\n• Constitute professional misconduct\n• Compound the original problem by preventing timely correction\n\nWatch for 'NOT' in the stem."}, {"id": 12, "topic": "II. Ethics", "type": "Ethical scenario", "stem": "An engineer's employer asks them to certify that an installation complies with all relevant codes. The engineer believes the installation generally complies but has not personally inspected several key components. The engineer should:", "options": ["Issue the certification — general compliance is enough.", "Issue the certification with a small disclaimer noting limitations.", "Decline to certify until they have personally verified, or had qualified personnel verify, all relevant components.", "Issue the certification subject to verbal assurance from the installer."], "answer": 2, "explanation": "Certifications carry professional weight and may be relied on by clients, regulators, insurers, and third parties (Hedley Byrne liability). An engineer should only certify what they (or qualified personnel acting under their direction) have actually verified.\n\nIssuing certifications based on assumption or partial information is professional misconduct and potentially negligent misrepresentation.\n\nA is wrong — 'generally complies' is not a basis for certifying compliance.\nB is wrong — fine-print disclaimers don't cure a fundamentally unsupported certification.\nD is wrong — verbal assurance from the installer is not professional verification."}, {"id": 13, "topic": "II. Ethics", "type": "Best-answer", "stem": "Of the following ethical theories, which BEST corresponds to the reasoning that an action is right if it produces the greatest good for the greatest number of people?", "options": ["Utilitarianism.", "Deontology (duty ethics).", "Virtue ethics.", "Rights theory."], "answer": 0, "explanation": "UTILITARIANISM (Jeremy Bentham, John Stuart Mill) holds that the rightness of an action depends on its consequences — specifically, on producing the greatest good (or least harm) for the greatest number.\n\nOther major ethical theories:\n• DEONTOLOGY (Kant) — duties and rules matter regardless of consequences. Some actions are wrong even if they produce good outcomes.\n• VIRTUE ETHICS (Aristotle) — focuses on the character of the person; ask what a virtuous person would do.\n• RIGHTS THEORY — emphasizes respecting fundamental human rights as side constraints on action.\n\nEngineering codes blend these — the duty to the public is consequentialist (protecting many), the duty of confidentiality is more deontological (a rule), and the emphasis on integrity reflects virtue ethics."}, {"id": 14, "topic": "II. Ethics", "type": "Ethical scenario", "stem": "An engineer at a small consulting firm discovers that the firm's senior partner (also a P.Eng.) has been routinely sealing structural drawings without performing the reviews that the seal implies. The junior engineer is concerned about both professional misconduct and possible safety implications. What is the MOST appropriate action?", "options": ["Take no action — interfering with senior management is not the junior engineer's role.", "Confront the senior partner directly but do not escalate further.", "Document the concern, raise it with the senior partner first, and report to the regulator (PEO) if it is not corrected.", "Anonymously alert the firm's clients to the practice."], "answer": 2, "explanation": "Engineers have a Code obligation to report apparent professional misconduct by other engineers, especially where public safety may be implicated. The proper sequence:\n\n1. Document the concern in writing\n2. Raise the issue internally (with the senior partner, or other firm leadership)\n3. If not corrected, report to the regulator\n\nRegulators have investigative authority and procedural fairness frameworks to properly assess these situations.\n\nA is wrong — duty to report doesn't yield to organizational hierarchy.\nB is wrong — confronting alone doesn't discharge the duty if the misconduct continues.\nD is wrong — alerting clients directly is not the proper channel, risks defamation claims, and bypasses regulatory due process."}, {"id": 15, "topic": "III. Professional Practice", "type": "Direct recall", "stem": "The standard 'ISO 9001' relates to:", "options": ["Environmental management systems.", "Occupational health and safety management systems.", "Quality management systems.", "Information security management systems."], "answer": 2, "explanation": "Key ISO management-system standards engineers should recognize:\n• ISO 9001 — QUALITY management systems\n• ISO 14001 — ENVIRONMENTAL management systems\n• ISO 45001 — OCCUPATIONAL HEALTH AND SAFETY management systems (replaced OHSAS 18001)\n• ISO 27001 — INFORMATION SECURITY management systems\n\nISO 9001 is the most widely adopted. Core principle: 'Say what you do, do what you say, prove it.' Documented procedures, consistent processes, continuous improvement."}, {"id": 16, "topic": "III. Professional Practice", "type": "Best-answer", "stem": "Which of the following BEST describes the difference between a HAZARD and a RISK?", "options": ["Hazards and risks are interchangeable terms.", "A hazard is a source of potential harm; a risk is the probability of harm occurring multiplied by its severity.", "A hazard is theoretical; a risk is observed.", "A hazard applies to people; a risk applies to property."], "answer": 1, "explanation": "HAZARD = a source of potential harm (e.g., high voltage, working at height, a toxic chemical).\n\nRISK = the probability that a hazard will result in harm × the severity of that harm.\n\nRisk = Probability × Consequence.\n\nHazards exist independently; risk depends on exposure and the effectiveness of controls. A high-voltage wire is a hazard whether anyone is near it or not; the risk to a particular person depends on how close they get, whether they're insulated, what controls are in place, etc.\n\nUnderstanding the distinction is fundamental to risk assessment and safety engineering."}, {"id": 17, "topic": "III. Professional Practice", "type": "Categorization", "stem": "Under Ontario's Occupational Health and Safety Act (OHSA), which of the following groups has DUTIES under the Act?", "options": ["Only employers.", "Only supervisors.", "Only workers.", "Employers, supervisors, AND workers — each with distinct responsibilities."], "answer": 3, "explanation": "Ontario's OHSA — and equivalent provincial OH&S legislation across Canada — imposes duties on ALL parties in the workplace under the INTERNAL RESPONSIBILITY SYSTEM (IRS):\n\n• EMPLOYERS — provide a safe workplace, training, equipment, supervision; establish a safety program; comply with regulations\n• SUPERVISORS — ensure workers comply with the Act and procedures; advise workers of hazards; take every reasonable precaution\n• WORKERS — work in compliance with the Act; use safety equipment; report hazards; do not engage in unsafe behaviour\n\nEngineers often have responsibilities under multiple categories simultaneously, depending on their role. Engineers in supervisory roles have personal liability for failing to fulfill their supervisor duties under the Act."}, {"id": 18, "topic": "III. Professional Practice", "type": "Direct recall", "stem": "Under most provincial Occupational Health and Safety legislation, a worker who reasonably believes work is unsafe has the right to:", "options": ["Sue the employer for damages in civil court.", "Refuse the unsafe work without being disciplined for refusing in good faith.", "Continue working but file a written complaint afterward.", "Apply directly to the regulator for a stop-work order."], "answer": 1, "explanation": "The RIGHT TO REFUSE UNSAFE WORK is a core feature of Canadian OH&S legislation. Workers (including engineers, in many circumstances) can refuse work they reasonably believe is unsafe and cannot be disciplined for doing so in good faith.\n\nTypical process:\n1. Worker notifies supervisor of the refusal\n2. Supervisor investigates with the worker and a Joint Health and Safety Committee (JHSC) representative\n3. If unresolved, the Ministry of Labour inspector is called\n4. The inspector's order is binding\n\nNote: Some 'essential' roles (police, fire, hospital staff, correctional officers) have modified refusal rights — they cannot refuse if the refusal would directly endanger another person's safety."}, {"id": 19, "topic": "III. Professional Practice", "type": "Direct recall", "stem": "An engineer's Errors & Omissions (E&O) policy is typically written on a 'claims-made' basis. This means:", "options": ["Claims are paid only if both the negligent act AND the claim occur during the policy period.", "Claims are paid whenever the negligent act occurred, regardless of when the claim is made.", "Claims are paid only if the negligent act occurred during the policy period, regardless of when the claim is made.", "Claims are paid by whichever insurer the engineer had at the time of the underlying negligent act."], "answer": 0, "explanation": "CLAIMS-MADE policies (the standard for E&O) require BOTH:\n• The claim must be MADE during the current policy period (or any extended reporting period purchased)\n• The act must have occurred after the policy's RETROACTIVE DATE\n\nWhy this matters:\n• If you let your E&O lapse and a claim arrives years later, your old policy won't respond — even though it was in force when the act occurred.\n• Maintaining continuous E&O coverage is critical, often with 'tail' coverage after retirement.\n\nThis contrasts with OCCURRENCE-BASED policies (typical for CGL), which respond to claims arising from acts during the policy period, regardless of when the claim is made."}, {"id": 20, "topic": "III. Professional Practice", "type": "Best-answer", "stem": "An engineer is invited to sit on the board of directors of a small technology company. The engineer's MOST important consideration regarding personal liability is:", "options": ["Directors of small companies have no personal liability.", "Personal liability is fully covered by the company's standard insurance.", "Directors owe fiduciary duties to the corporation and may face personal liability for breaches; D&O insurance and indemnification provisions in the bylaws are important protections.", "Liability is only an issue if the company becomes insolvent."], "answer": 2, "explanation": "Corporate directors owe FIDUCIARY duties to the corporation:\n• Duty of LOYALTY — act in the best interests of the corporation\n• Duty of CARE — exercise the care, diligence, and skill of a reasonably prudent person\n\nDirectors can be personally liable for:\n• Breach of fiduciary duty\n• Specific statutory liabilities (unpaid wages, source deductions, environmental violations)\n• Improperly authorized dividends or share buy-backs\n• Knowingly false or misleading statements (under securities law)\n\nKey protections:\n• DIRECTORS & OFFICERS (D&O) INSURANCE — covers most claims against directors\n• INDEMNIFICATION provisions in the corporation's bylaws\n• 'Business judgment rule' — courts defer to good-faith board decisions\n\nA is wrong — small company directors have personal liability too.\nB is wrong — standard insurance doesn't cover director liability; D&O is specialized.\nD is wrong — liability arises throughout the company's life, not only at insolvency."}, {"id": 21, "topic": "III. Professional Practice", "type": "Direct recall", "stem": "Which procurement method is generally recommended by Engineers Canada and many provincial regulators for selecting engineering consultants for professional services?", "options": ["Lowest-bid selection (selecting the firm with the cheapest proposal).", "Qualifications-Based Selection (QBS), where consultants are selected primarily on their qualifications and fees are negotiated with the top-ranked firm.", "Random selection from a pre-qualified list.", "Sole-source selection without competition."], "answer": 1, "explanation": "QUALIFICATIONS-BASED SELECTION (QBS) is the recommended approach for engineering (and architectural) services in Canada. The process:\n1. Consultants submit qualifications proposals (no fee disclosed)\n2. The top-ranked firm is selected based on qualifications, experience, and approach\n3. Fees are then negotiated with that top-ranked firm\n4. If negotiations fail, the next-ranked firm is engaged\n\nRationale: Engineering services have public-safety implications. The cheapest design may be a false economy if it leads to higher construction costs, lower performance, or safety problems. Better design produces better outcomes.\n\nQBS is required by law for federal engineering procurement in the United States (Brooks Act) and recommended throughout Canada."}, {"id": 22, "topic": "III. Professional Practice", "type": "Direct recall", "stem": "An engineer signs and seals each individual page of a multi-page drawing set. This practice is BEST described as:", "options": ["Required by law in every Canadian jurisdiction.", "Strongly preferred practice — sealing each page clearly establishes responsibility for each drawing.", "Considered excessive and a waste of time.", "A breach of professional duty."], "answer": 1, "explanation": "Sealing each individual page of a drawing set is the PREFERRED practice in most jurisdictions. It:\n• Clearly establishes professional responsibility for each drawing\n• Prevents pages from being separated from the seal and used independently without the engineer's responsibility being clear\n• Provides protection if pages are altered or substituted\n\nSome jurisdictions accept sealing the first page along with a clear table of contents listing all included drawings, but this is more vulnerable to manipulation.\n\nA is wrong — not strictly required EVERYWHERE in every jurisdiction; practices vary.\nC is wrong — this is best practice for liability protection.\nD is wrong — it's the opposite of a breach; it's a thorough discharge of responsibility."}, {"id": 23, "topic": "III. Professional Practice", "type": "Categorization", "stem": "Which of the following is NOT typically a feature of a well-drafted engineering services contract?", "options": ["A clearly defined scope of work.", "Payment terms and schedule.", "A clause shifting all liability to the engineer regardless of fault.", "A dispute resolution mechanism."], "answer": 2, "explanation": "Well-drafted engineering services contracts typically include:\n• Clear SCOPE of work\n• Payment terms and schedule\n• Schedule and milestones\n• Standard of care provisions (typically tied to reasonable competence, NOT absolute guarantees)\n• LIMITATION of liability (capping engineer exposure)\n• Indemnification provisions (often mutual)\n• Insurance requirements\n• Intellectual property ownership\n• DISPUTE RESOLUTION mechanism (often ADR before litigation)\n• Termination provisions\n\nA clause shifting ALL liability to the engineer regardless of fault would be:\n• Heavily disadvantageous to the engineer\n• Potentially unconscionable and unenforceable\n• Contrary to standard professional practice\n\nEngineers should resist 'absolute' or strict liability clauses and instead negotiate limitations tied to the standard of care."}, {"id": 24, "topic": "III. Professional Practice", "type": "Best-practice", "stem": "An engineer is hired by a client to provide a fixed-price design for a project. Midway through the project, the client requests significant additional work outside the original scope. The MOST APPROPRIATE response is to:", "options": ["Perform the additional work without additional charge to maintain the client relationship.", "Refuse to perform any additional work under any circumstances.", "Issue a written change order (or scope-change notice) describing the additional work and the additional fee, and obtain the client's written acceptance before proceeding.", "Perform the additional work and bill for it at the end of the project."], "answer": 2, "explanation": "Scope changes should always be handled with a written CHANGE ORDER (or scope-change notice) BEFORE the work is performed. The change order should describe:\n• The additional work being added (or removed)\n• The associated change in fee\n• Any impact on schedule\n• Signatures of both parties confirming agreement\n\nWhy this matters:\n• Prevents disputes about whether the work was included in the original scope\n• Documents that the client accepted the additional cost\n• Protects the engineer if the client later refuses to pay\n\nA is wrong — performing scope-change work for free sets a poor precedent and may indicate the engineer is undervaluing their services.\nB is wrong — there's no reason to refuse all additional work; just price it properly.\nD is wrong — billing at the end without prior written agreement invites disputes and may result in non-payment. Quantum meruit may apply but is harder to enforce."}, {"id": 25, "topic": "III. Professional Practice", "type": "Direct recall", "stem": "Which of the following is the BEST description of an 'as-built' drawing?", "options": ["The engineer's original design intent drawing.", "A drawing showing what was actually constructed in the field, including any deviations from the design.", "A preliminary drawing issued for client review.", "A drawing certified by the contractor as compliant with the design."], "answer": 1, "explanation": "AS-BUILT drawings show what was ACTUALLY CONSTRUCTED in the field — including any field changes, deviations from the original design, locations of installed equipment, and similar 'reality' information.\n\nTypically prepared by the contractor and submitted to the engineer/owner at project completion. The engineer may review and accept the as-builts but is not responsible for what the contractor built (unless they specifically supervised it).\n\nUses:\n• Future maintenance and renovations\n• Operations manuals\n• Defending claims of design deficiencies (showing that what was built differed from what was designed)\n\nWhen sealing or reviewing as-builts, the engineer should clearly note the scope of their review and any limitations."}, {"id": 26, "topic": "III. Professional Practice", "type": "Best-answer", "stem": "An engineer designs a product that incorporates a safety feature. After delivery of the product, the engineer learns of a hazard that the safety feature does NOT address. The engineer's duty to warn:", "options": ["Ends with delivery of the product.", "Is satisfied by including a disclaimer in the original documentation.", "Continues after delivery; the engineer must take reasonable steps to warn the affected parties of the hazard.", "Applies only if the engineer was specifically asked about post-delivery hazards."], "answer": 2, "explanation": "The DUTY TO WARN is an ongoing obligation. Even after a product is delivered or work completed, if the engineer learns of a hazard that could harm users, they have a duty to take reasonable steps to warn affected parties.\n\nThis duty:\n• Cannot be contracted away for matters of public safety\n• Continues after the engineer's involvement with the project ends\n• Continues even if employment with the original employer has ended\n\nPractical implementation:\n• Notify the manufacturer/distributor first\n• Ensure the warning reaches affected users\n• Document all efforts to fulfill the duty\n• Escalate to authorities (e.g., Health Canada, Transport Canada, MOL) if needed\n\nA and D are wrong — duty to warn is ongoing and not dependent on being asked.\nB is wrong — a disclaimer doesn't address new hazards discovered later."}, {"id": 27, "topic": "III. Professional Practice", "type": "Categorization", "stem": "Which of the following statements about engineering work performed using commercial software is TRUE?", "options": ["Use of well-known commercial software completely transfers responsibility for errors to the software vendor.", "The engineer remains responsible for the appropriateness of the software for the task, for understanding its limitations, and for verifying its outputs.", "The engineer is only responsible for inputs to the software, not for the software's calculations.", "Use of certified software automatically satisfies the standard of care."], "answer": 1, "explanation": "Software is a TOOL. Engineers remain professionally responsible for:\n• Selecting appropriate software for the task at hand\n• Understanding the software's assumptions, limitations, and required inputs\n• Verifying inputs are correct\n• Reviewing outputs for reasonableness (sanity checks, hand calculations of critical values)\n• Recognizing when the software is being used outside its validated range\n\nEngineers cannot delegate professional responsibility to a software vendor any more than they can delegate it to a junior engineer. The seal on the output declares the ENGINEER's responsibility for the work, not the software's.\n\nA and C — both attempt to shift responsibility to the vendor or away from calculations. Both wrong.\nD — even certified or widely-used software can be misapplied; certification doesn't substitute for engineering judgment."}, {"id": 28, "topic": "III. Professional Practice", "type": "Direct recall", "stem": "Which clause in an engineering contract specifies a pre-agreed dollar amount that the contractor must pay for each day of delay beyond the contract completion date?", "options": ["Force majeure clause.", "Indemnification clause.", "Liquidated damages clause.", "Quantum meruit clause."], "answer": 2, "explanation": "A LIQUIDATED DAMAGES clause specifies a pre-agreed amount payable upon breach (commonly per-day delay in construction contracts). For example: $1,000 per calendar day of delay beyond the substantial completion date.\n\nEnforceability: courts uphold liquidated damages clauses if they are a GENUINE PRE-ESTIMATE of damages — not a penalty. Penalty clauses (designed to punish rather than compensate) are unenforceable.\n\nThe other clauses:\n• FORCE MAJEURE — excuses performance during extraordinary events outside the parties' control (natural disasters, war, pandemics in some drafting)\n• INDEMNIFICATION — one party agrees to compensate the other for specified losses\n• QUANTUM MERUIT — a legal remedy for the reasonable value of services where no enforceable contract exists, not a contract clause"}, {"id": 29, "topic": "III. Professional Practice", "type": "Best-answer", "stem": "An engineer is approached by a homeowner who wants the engineer to certify that an existing structural modification (built without permits 10 years ago) is safe. The engineer's MOST APPROPRIATE response is to:", "options": ["Decline because legalizing unpermitted work is unethical.", "Provide the certification based on visual inspection alone.", "Conduct an appropriate engineering investigation (calculations, physical inspection, possibly testing) and provide a certification reflecting only what the investigation supports, with clear notation of any limitations.", "Refer the homeowner to a different engineer."], "answer": 2, "explanation": "Engineers can legitimately assess and certify existing structures. The work simply needs to be done properly:\n• Conduct an appropriate investigation (calculations, physical inspection, possibly destructive or non-destructive testing depending on what's needed)\n• Provide certification that reflects ONLY what the investigation actually supports\n• Clearly note assumptions and limitations\n• Recommend further investigation if anything is uncertain\n\nNote: the engineer's certification of structural adequacy does NOT cure any permit/code compliance issue with the original construction — that's a separate matter for the building authority.\n\nA is wrong — engineers can legitimately assess existing work.\nB is wrong — visual inspection alone is rarely sufficient for structural certification.\nD is wrong — there's no reason to decline if the engineer is competent and the investigation can be done properly."}, {"id": 30, "topic": "IV. Law", "type": "Direct recall", "stem": "Copyright in Canada lasts for:", "options": ["20 years from the date of creation.", "50 years from the date of creation.", "The life of the author plus 70 years.", "The life of the author plus 50 years."], "answer": 2, "explanation": "Canada's Copyright Act sets the duration as the life of the author PLUS 70 years (extended from +50 years in 2022, to align with international trade agreements).\n\nImportant features:\n• AUTOMATIC on creation — no registration required\n• Protects original literary, dramatic, musical, and artistic works — including engineering drawings, technical reports, software code, photographs\n• Protects EXPRESSION, not the underlying idea\n• Registration with CIPO is optional but helps in disputes\n\nAfter the protection period, the work enters the public domain."}, {"id": 31, "topic": "IV. Law", "type": "Direct recall", "stem": "An industrial design (e.g., the unique visual shape of a product) registered in Canada is protected for a maximum of:", "options": ["5 years.", "10 years.", "15 years (10 years + 5 with maintenance fee).", "20 years."], "answer": 2, "explanation": "Canadian Industrial Designs are protected for up to 15 years total — initially 10 years from registration, with a 5-year extension available with maintenance fee.\n\nIndustrial designs protect the VISUAL FEATURES of a finished article — shape, configuration, pattern, ornamentation. They protect appearance, NOT function (functional features may be patentable).\n\nClassic example: the unique shape of the Coca-Cola bottle.\n\nRegistration with CIPO is REQUIRED — there's no automatic industrial design protection."}, {"id": 32, "topic": "IV. Law", "type": "Direct recall", "stem": "A Canadian trademark, once registered, is protected for an initial term of:", "options": ["5 years, renewable indefinitely.", "10 years, renewable indefinitely.", "15 years, not renewable.", "20 years, not renewable."], "answer": 1, "explanation": "Registered Canadian trademarks last 10 years from registration and are RENEWABLE INDEFINITELY (in 10-year increments) so long as the trademark continues to be used and renewal fees are paid.\n\nThis is the longest-potential protection of any IP form — a trademark used continuously can last forever.\n\nTrademarks protect: words, names, logos, slogans, sounds, even scents that distinguish goods/services in the marketplace. The ™ symbol denotes unregistered; ® denotes registered.\n\nUnregistered trademarks can exist at common law from use, but registration with CIPO gives much stronger and clearer rights."}, {"id": 33, "topic": "IV. Law", "type": "Legal application", "stem": "An engineer who is an EMPLOYEE invents a new device while at work, during work hours, using company resources, in an area related to the company's business. Who typically owns the patent rights?", "options": ["The engineer, because they are the inventor.", "The employer, because the invention was made within the scope of employment.", "Jointly owned between the engineer and the employer.", "The Canadian government, because patents are granted by CIPO."], "answer": 1, "explanation": "For EMPLOYEE-created inventions, the default rule (subject to the employment contract) is that the EMPLOYER owns inventions made within the scope of employment. Factors that strengthen the employer's claim:\n• On work time\n• Using employer resources\n• In an area related to employer's business\n• Employment contract specifies invention ownership\n\nBest practice: employment contracts explicitly address invention ownership to avoid disputes.\n\nException: inventions made entirely on the employee's own time, with own resources, unrelated to employer's business — these generally belong to the employee.\n\nImportant contrast: INDEPENDENT CONTRACTORS typically RETAIN IP ownership unless the contract assigns it to the client. Always address IP in service agreements."}, {"id": 34, "topic": "IV. Law", "type": "Legal application", "stem": "An engineer who is an INDEPENDENT CONTRACTOR creates a software algorithm while working on a project for a client. The contract is silent on IP ownership. Who typically owns the copyright in the algorithm?", "options": ["The client, because they paid for the work.", "The contractor (engineer), because copyright vests in the author absent a written assignment.", "Jointly owned.", "Neither — it falls into the public domain."], "answer": 1, "explanation": "For INDEPENDENT CONTRACTORS, copyright generally vests in the CONTRACTOR — the author of the work — UNLESS the contract assigns it to the client.\n\nThis is opposite to the employee rule (where the employer typically owns).\n\nPractical implication: clients hiring consultants for design work, software, or any other copyrightable work should require WRITTEN IP ASSIGNMENT in the contract. Without it, the client may have only a limited licence to use the work for the original purpose — not full ownership.\n\nEngineers offering consulting services should be aware of this rule when negotiating contracts; clients may push for full IP assignment, and the engineer should price accordingly.\n\nA is wrong — payment alone doesn't transfer IP ownership.\nC is wrong — there's no default joint ownership.\nD is wrong — the work doesn't fall into the public domain; it remains the contractor's."}, {"id": 35, "topic": "IV. Law", "type": "Direct recall", "stem": "A TRADE SECRET is BEST described as:", "options": ["Information registered with CIPO that grants a 20-year monopoly.", "Confidential business information that gives competitive advantage and is protected by keeping it secret and using NDAs.", "Engineering knowledge published in technical journals.", "Information that has been disclosed but not formally patented."], "answer": 1, "explanation": "TRADE SECRETS are confidential business information that gives competitive advantage. Unlike patents:\n• NOT registered anywhere — there's no application or examination\n• Protected by maintaining secrecy and using Non-Disclosure Agreements (NDAs)\n• Can last FOREVER as long as they remain secret\n• Lost the moment they become public\n\nClassic examples: Coca-Cola formula, Google's search algorithm, KFC's spice blend.\n\nImportant: REVERSE ENGINEERING is generally LEGAL — if a competitor can figure out your trade secret by analyzing your product, they can use it. Patents protect against reverse engineering; trade secrets do not.\n\nChoosing between patent and trade secret protection involves trade-offs: a patent gives 20 years of strong protection but requires disclosure; a trade secret can last forever but is lost if disclosed."}, {"id": 36, "topic": "IV. Law", "type": "Legal application", "stem": "A contractor performs additional work at the owner's verbal request, beyond the scope of the written contract. The parties did not sign a change order. The contractor's BEST legal claim for payment is likely under:", "options": ["Breach of contract.", "Quantum meruit (reasonable value of work performed) and/or unjust enrichment.", "Promissory estoppel only.", "Tort of negligence."], "answer": 1, "explanation": "QUANTUM MERUIT ('as much as he has earned') is a legal remedy that allows recovery of the reasonable value of services performed where there is no enforceable contract for the work, or where the work was performed outside an existing contract.\n\nUNJUST ENRICHMENT is the closely related equitable principle that one party should not unfairly benefit at another's expense. Three elements:\n• Enrichment of the defendant\n• Corresponding deprivation of the plaintiff\n• Absence of juristic reason for the enrichment\n\nTogether, quantum meruit and unjust enrichment provide a path to payment when the formal contract doesn't cover the work.\n\nA — breach of contract would require a contract covering the work, which doesn't exist here.\nC — promissory estoppel typically prevents a party from going back on a promise where the other party relied on it; it's an equitable doctrine, but quantum meruit is the cleaner fit here.\nD — tort of negligence is about harm caused, not unpaid work."}, {"id": 37, "topic": "IV. Law", "type": "Legal application", "stem": "The legal principle that a written, fully integrated contract cannot be modified by outside oral evidence of prior agreements is known as:", "options": ["The doctrine of frustration.", "The parol evidence rule.", "The Statute of Frauds.", "The doctrine of consideration."], "answer": 1, "explanation": "The PAROL EVIDENCE RULE says that when a contract is in writing and intended to be the complete agreement, OUTSIDE (oral) evidence generally cannot be used to contradict, modify, or add to the written terms.\n\nExceptions where outside evidence IS admissible:\n• To prove fraud or misrepresentation\n• To resolve ambiguity in the contract\n• To show a condition precedent (something that had to happen before the contract took effect)\n• To prove a collateral (side) agreement\n• To show mistake in drafting\n\nPractical lesson: get every important term IN WRITING. If a vendor or client tells you something orally that matters, get it added to the written contract — courts may not let you use the oral promise later.\n\nThe other concepts:\n• FRUSTRATION — a contract becomes impossible/radically different to perform due to unforeseen events\n• STATUTE OF FRAUDS — requires WRITING for certain types of contracts\n• CONSIDERATION — the requirement that something of value be exchanged"}, {"id": 38, "topic": "IV. Law", "type": "Legal application", "stem": "Two engineering students orally agree that one will pay the other $2,000 for the use of an engineering software licence for 6 months. Several months in, the borrower refuses to pay. Is this oral agreement enforceable?", "options": ["No — oral contracts are never enforceable in Canada.", "Yes — there is no Statute of Frauds requirement that this type of contract be in writing.", "No — the Statute of Frauds requires all contracts over $500 to be in writing.", "Yes — but only if both parties are at least 21 years old."], "answer": 1, "explanation": "Most oral contracts ARE enforceable in Canada. The STATUTE OF FRAUDS requires writing only for specific categories:\n• Contracts for the sale of LAND or interests in real property\n• Contracts that cannot be performed within ONE YEAR\n• GUARANTEES (one party promising to pay another's debt)\n• Some contracts under specific legislation (e.g., consumer protection)\n\nA software licence for 6 months doesn't fall into any of these categories — it's a service contract that can be performed within a year, doesn't involve land, and isn't a guarantee. So it's enforceable orally.\n\nHowever, ENFORCEABLE doesn't mean EASILY PROVED. Without writing, the party trying to enforce must prove the terms of the oral agreement, which can be difficult. Writing is always wiser even when not legally required.\n\nA is wrong — oral contracts are routinely enforced.\nC is wrong — no general $500 writing requirement exists.\nD is wrong — age of majority is 18 or 19 in Canadian provinces, not 21."}, {"id": 39, "topic": "IV. Law", "type": "Legal application", "stem": "The case Rylands v. Fletcher (1868) is foundational to which area of liability?", "options": ["Negligent misrepresentation.", "Strict liability for non-natural use of land (e.g., when something dangerous escapes from land and causes damage).", "Contract formation.", "Vicarious liability of employers."], "answer": 1, "explanation": "RYLANDS v. FLETCHER (1868 UK) established STRICT LIABILITY for non-natural use of land. If a person brings something dangerous onto their land (water, fire, chemicals, gas) that ESCAPES and causes damage to neighbouring land, they are liable WITHOUT proof of negligence.\n\nOriginal facts: defendant's reservoir burst, flooding the plaintiff's mine. The House of Lords held the defendant liable even though there was no negligence in the reservoir's construction.\n\nModern applications: environmental contamination cases, escapes from chemical plants, spreading fires.\n\nThe four elements:\n1. Non-natural use of land\n2. Something brought onto the land\n3. Escape\n4. Damage caused by the escape\n\nEngineers involved in storing or processing hazardous materials should understand this principle — strict liability means even careful operations can result in liability if there's an escape.\n\nOther cases:\n• HEDLEY BYRNE — negligent misrepresentation (option A)\n• DONOGHUE v. STEVENSON — neighbour principle in negligence"}, {"id": 40, "topic": "IV. Law", "type": "Categorization", "stem": "Which of the following statements about JOINT AND SEVERAL liability is TRUE?", "options": ["Each defendant pays only their proportional share of the damages.", "Each defendant can be held liable for the full amount of damages, regardless of their proportional share of fault. The plaintiff may collect from any one of them.", "Joint and several liability applies only to married couples.", "Joint and several liability has been abolished in Canada."], "answer": 1, "explanation": "JOINT AND SEVERAL LIABILITY means each defendant can be held liable for the FULL amount of damages, and the plaintiff can collect the entire amount from any one of them. The defendants then sort out contribution among themselves.\n\nThe infamous '1% liable, 100% pay' problem: an engineer found only 1% at fault for a $10 million loss can still be ordered to pay the entire $10 million if the other defendants are bankrupt or insolvent. They can then sue the others for contribution — but if those others have no money, the engineer absorbs the loss.\n\nThis is a major reason engineers carry E&O insurance and prefer contractual limitations of liability where possible.\n\nSome jurisdictions have moved toward 'proportional' or 'several only' liability for certain types of claims, but joint and several remains the default in most Canadian provinces for most claims.\n\nA is wrong — that describes PROPORTIONAL liability, not joint and several.\nC is wrong — joint and several liability applies between any co-defendants, not just spouses.\nD is wrong — it has not been abolished, though some reforms have been proposed in particular contexts."}, {"id": 41, "topic": "IV. Law", "type": "Legal application", "stem": "An engineer's design is defective due to a calculation error. A construction worker is injured when the structure fails. The worker's claim against the engineer is MOST LIKELY brought under:", "options": ["Breach of contract — the engineer breached the design contract.", "Tort of negligence — the engineer owed a duty of care to foreseeable users including workers, breached the standard of care, and caused damages.", "Breach of trust — the engineer betrayed the worker's trust.", "Strict product liability — the engineer is automatically liable for any injury."], "answer": 1, "explanation": "The worker has no contract with the engineer (no privity of contract). Their claim must be in TORT — specifically NEGLIGENCE.\n\nUnder Donoghue v. Stevenson's neighbour principle, the engineer owed a duty of care to foreseeable users of the structure, including construction workers. The four elements of negligence:\n1. DUTY — yes (foreseeable user)\n2. BREACH — yes (calculation error fell below the standard)\n3. CAUSATION — yes (the breach caused the failure)\n4. DAMAGES — yes (the worker was injured)\n\nA is wrong — no contract between the worker and the engineer.\nC is wrong — breach of trust is a fiduciary concept, not relevant here.\nD is wrong — Canada generally doesn't apply STRICT PRODUCT LIABILITY (unlike the US); product injury claims in Canada usually proceed under negligence. The manufacturer/designer can also be sued for the same incident."}, {"id": 42, "topic": "V. Professional Law", "type": "Direct recall", "stem": "The Ontario regulation that specifies the conduct constituting professional misconduct under the Professional Engineers Act is:", "options": ["Regulation 941.", "Regulation 213.", "The Engineers Canada Code of Ethics.", "Section 12 of the Building Code Act."], "answer": 0, "explanation": "REGULATION 941 under Ontario's Professional Engineers Act defines:\n• Professional misconduct (Section 72)\n• Use of the engineer's seal (Section 53)\n• Quality and quantity of engineering experience required for licensure\n• Requirements for the Certificate of Authorization\n• Various other administrative requirements\n\nSection 72 of Reg 941 lists specific acts of misconduct including:\n• Negligence\n• Failure to make reasonable provision for safeguarding life, health, or property\n• Sealing work not prepared/reviewed by the engineer\n• Undertaking work outside competence\n• Failure to disclose conflict of interest\n• Breach of the Code of Ethics\n• Conduct that would be regarded as disgraceful, dishonourable, or unprofessional\n• Harassment\n• Failure to comply with a PEO order\n\nEvery Ontario engineer should be familiar with Section 72 — these are the items that can result in discipline."}, {"id": 43, "topic": "V. Professional Law", "type": "Direct recall", "stem": "In Ontario, the minimum amount of acceptable engineering work experience required for licensure as a Professional Engineer is typically:", "options": ["12 months.", "24 months.", "48 months (4 years).", "60 months (5 years)."], "answer": 2, "explanation": "48 months (4 years) of acceptable engineering work experience is the typical requirement across Canadian provinces, including Ontario.\n\nCommon features:\n• At least 12 months must usually be in Canadian environment (with some flexibility)\n• Experience must be supervised by a licensed P.Eng.\n• Must demonstrate progressive responsibility and the application of engineering judgment\n• Must cover specific competency areas (technical, communication, ethics, etc.)\n• Up to 12 months of pre-graduation experience may count in some jurisdictions\n\nSome provinces allow shortened experience for graduate degrees (e.g., a Master's may count toward 12 months).\n\nEITs (Engineers-in-Training) formally track their experience through the regulator's experience-recording program."}, {"id": 44, "topic": "V. Professional Law", "type": "Categorization", "stem": "Which of the following is NOT generally required for licensure as a Professional Engineer in a Canadian province?", "options": ["An accredited engineering degree, or assessed equivalent for foreign degrees.", "Demonstration of good character.", "Successful completion of the NPPE.", "Canadian citizenship."], "answer": 3, "explanation": "Canadian citizenship is NOT generally required for engineering licensure. Most provinces require LEGAL STATUS in Canada (permanent resident, citizen, or work permit) but not citizenship specifically.\n\nWhat IS required:\n• ACADEMIC — accredited degree or assessed equivalent (technical exams may be required for unaccredited degrees)\n• EXPERIENCE — typically 48 months of acceptable engineering experience\n• EXAMINATION — NPPE (and any provincial supplementary exams)\n• GOOD CHARACTER — applicant must satisfy the regulator that they are of good character\n• LANGUAGE PROFICIENCY — adequate English (or French in some provinces)\n• LEGAL STATUS — citizen, permanent resident, or with appropriate work authorization\n\nWatch for 'NOT' in the stem."}, {"id": 45, "topic": "V. Professional Law", "type": "Legal application", "stem": "An unlicensed person performs engineering work for a fee in Ontario, putting the public at risk. Under the Professional Engineers Act, this conduct:", "options": ["Is permitted if the person has an engineering degree.", "Is an offence under the Act, prosecutable by PEO, with potential fines.", "Is only addressed through PEO's disciplinary committee.", "Can only be addressed by the person's eventual customers through lawsuits."], "answer": 1, "explanation": "Practising professional engineering without a licence is an OFFENCE under the PE Act. PEO can prosecute violations:\n• First offence: fines up to $25,000 for individuals\n• Subsequent offences: higher fines\n• Corporations also subject to (higher) fines\n• Court can issue injunctions to stop the conduct\n\nNote: PEO's discipline committee handles misconduct by LICENSED members. Unauthorized practice by non-members is handled differently — through prosecution in the courts, on PEO's information.\n\nA is wrong — a degree alone does not authorize practice; only licensure does.\nC is wrong — discipline committees handle licensed members; unauthorized practice by non-members is prosecuted differently.\nD is wrong — public protection requires proactive enforcement; relying on customer lawsuits is inadequate."}, {"id": 46, "topic": "V. Professional Law", "type": "Direct recall", "stem": "When a Professional Engineering firm wishes to provide engineering services to the public in Ontario, the firm itself must hold:", "options": ["A business licence from the municipality where it operates.", "A Certificate of Authorization (C of A) from PEO.", "An Engineers Canada certification.", "A federal incorporation certificate."], "answer": 1, "explanation": "A CERTIFICATE OF AUTHORIZATION (C of A) is required from PEO for any business entity (sole proprietorship, partnership, OR corporation) that offers or provides professional engineering services to the public in Ontario.\n\nThe C of A:\n• Ensures a designated P.Eng. takes professional responsibility for the firm's engineering services\n• Lists the practice areas the firm is authorized to work in\n• Requires the firm to maintain certain insurance levels (with provisions for candid disclosure if insurance is below threshold)\n• Must be renewed annually\n\nWithout a C of A, the firm cannot legally provide engineering services in Ontario, regardless of the licensure of individual engineers within it.\n\nOther provinces have similar requirements under different names (e.g., 'Permit to Practice' in some jurisdictions)."}, {"id": 47, "topic": "VI. Regulation & Discipline", "type": "Direct recall", "stem": "A complaint about an engineer's conduct is received by PEO. The matter is INITIALLY reviewed and investigated by:", "options": ["The Discipline Committee.", "The Complaints Committee.", "The Council (board of directors).", "The Registrar's office."], "answer": 1, "explanation": "The standard sequence of professional discipline in most Canadian regulators:\n\n1. COMPLAINT received (by anyone — client, public, another engineer, regulator staff)\n2. COMPLAINTS COMMITTEE reviews and may investigate. It can:\n   • Dismiss the complaint as unfounded\n   • Issue advice or admonishment without formal discipline\n   • Require additional education\n   • Refer the matter to the DISCIPLINE COMMITTEE for a formal hearing\n3. DISCIPLINE COMMITTEE conducts a formal hearing (if referred) and decides whether misconduct has been proven. If so, it imposes penalties.\n4. APPEAL to the courts is available from the Discipline Committee's decision\n\nThis two-stage process — Complaints first, Discipline only if warranted — provides screening so that the formal hearing process is reserved for matters that genuinely warrant it.\n\nA is wrong — Discipline Committee comes later, only if referred.\nC is wrong — Council sets policy and rules, but doesn't handle individual complaints.\nD is wrong — the Registrar is involved administratively but isn't the investigating body."}, {"id": 48, "topic": "VI. Regulation & Discipline", "type": "Direct recall", "stem": "Which of the following describes the PRIMARY purpose of professional discipline?", "options": ["Punishment of the engineer for wrongdoing.", "Protection of the public.", "Compensation of injured parties.", "Generating revenue for the regulator."], "answer": 1, "explanation": "Professional discipline exists primarily to PROTECT THE PUBLIC — by:\n• Removing dangerous practitioners from the profession (suspension/revocation)\n• Imposing conditions to prevent future harm (restrictions, supervision)\n• Setting standards that other engineers will follow (deterrence)\n• Maintaining public confidence in the profession\n\nDiscipline is NOT primarily about:\n• PUNISHMENT — though penalties feel punitive, the goal is public protection, not retribution\n• COMPENSATION — that's the role of civil courts (negligence lawsuits)\n• REVENUE — fines fund regulator operations but aren't the purpose\n\nThis protective rather than punitive framing matters because it shapes how discipline panels approach their decisions. Penalties are calibrated to public protection, not to 'fairness' in a retributive sense."}, {"id": 49, "topic": "VI. Regulation & Discipline", "type": "Direct recall", "stem": "If an engineer is dissatisfied with a decision of PEO's Discipline Committee, the available remedy is typically:", "options": ["There is no appeal — Discipline Committee decisions are final.", "Appeal to the Council of PEO.", "Appeal to the Divisional Court of the Ontario Superior Court of Justice.", "Appeal to Engineers Canada."], "answer": 2, "explanation": "Discipline Committee decisions in Ontario can be APPEALED to the Divisional Court (part of the Ontario Superior Court of Justice). This is an exercise of administrative law — the court reviews the Discipline Committee's decision for:\n• Procedural fairness (was the engineer given a fair hearing?)\n• Errors of law\n• In some cases, reasonableness of the decision\n\nStandard of review (briefly): courts generally apply a 'reasonableness' standard for most aspects of regulator decisions, deferring to the regulator's expertise. But they apply 'correctness' for pure questions of law and constitutional issues.\n\nA is wrong — Discipline Committee decisions are appealable.\nB is wrong — Council doesn't sit as an appellate body over Discipline; they're two separate functions.\nD is wrong — Engineers Canada doesn't have appellate authority over provincial regulators."}, {"id": 50, "topic": "VI. Regulation & Discipline", "type": "Best-answer", "stem": "In a PEO discipline hearing, the engineer is alleged to have engaged in professional misconduct. Which of the following statements about the engineer's rights at the hearing is MOST accurate?", "options": ["The engineer has no procedural rights because discipline is administrative.", "The engineer is entitled to procedural fairness, including notice of the allegations, the right to legal counsel, the right to know and cross-examine the evidence against them, and the right to a decision by an impartial tribunal.", "The engineer has the same rights as a criminal defendant, including the right to a jury.", "The engineer must represent themselves; legal counsel is not permitted."], "answer": 1, "explanation": "PEO discipline hearings are subject to ADMINISTRATIVE LAW principles of PROCEDURAL FAIRNESS (also called natural justice). The engineer is entitled to:\n\n• NOTICE of the specific allegations\n• Adequate TIME to prepare\n• Right to LEGAL COUNSEL (and most engineers facing serious allegations should retain experienced counsel)\n• Disclosure of the EVIDENCE the regulator intends to rely on\n• Right to TEST the evidence (cross-examine witnesses)\n• Right to present DEFENCE evidence and arguments\n• Right to a decision by an IMPARTIAL tribunal\n• Right to REASONS for the decision\n• Right to APPEAL\n\nFailure to provide procedural fairness can result in the decision being quashed on appeal.\n\nNote: discipline hearings are NOT criminal proceedings, so the engineer does NOT have:\n• A right to a jury trial\n• The right against self-incrimination (in the criminal sense)\n• Charter protections applicable to criminal proceedings\nBut they DO have administrative-law procedural fairness rights."}], "timeLimit": 4050}</script>
+
+<script>
+const DATA = JSON.parse(document.getElementById('dataScript').textContent);
+const QUESTIONS = DATA.questions;
+const TIME_LIMIT_SECONDS = DATA.timeLimit;  // seconds
+const PASS_MARK = 0.65;
+const LETTERS = ['A', 'B', 'C', 'D'];
+
+let currentIdx = 0;
+let answers = {};   // qid -> selected option idx
+let flagged = {};   // qid -> true
+let timerInterval = null;
+let timeRemaining = TIME_LIMIT_SECONDS;
+let examSubmitted = false;
+let reviewIdx = 0;
+
+function startExam() {
+  document.getElementById('startScreen').style.display = 'none';
+  document.getElementById('examUI').style.display = 'block';
+  buildGrid('qgrid', false);
+  renderQuestion(0);
+  startTimer();
+}
+
+function startTimer() {
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    timeRemaining--;
+    updateTimerDisplay();
+    if (timeRemaining <= 0) {
+      clearInterval(timerInterval);
+      showModal("Time's up", "The time limit has been reached. Your answers will be submitted now.", submitExam, "View Results");
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(timeRemaining / 60);
+  const s = timeRemaining % 60;
+  const display = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  const t = document.getElementById('timer');
+  if (t) t.textContent = display;
+  if (t) {
+    t.classList.toggle('warning', timeRemaining <= 600 && timeRemaining > 300);
+    t.classList.toggle('critical', timeRemaining <= 300);
+  }
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function renderQuestion(idx) {
+  currentIdx = idx;
+  const q = QUESTIONS[idx];
+  const userAnswer = answers[q.id];
+  const isFlagged = flagged[q.id];
+
+  let optionsHtml = '';
+  q.options.forEach((text, i) => {
+    let classes = 'option';
+    if (userAnswer === i) classes += ' selected';
+    optionsHtml += `
+      <div class="${classes}" onclick="selectOption(${q.id}, ${i})">
+        <span class="option-letter">${LETTERS[i]}.</span>
+        <span>${escapeHtml(text)}</span>
+      </div>`;
+  });
+
+  const isLast = idx === QUESTIONS.length - 1;
+  const flagLabel = isFlagged ? '🚩 Flagged' : 'Flag for review';
+
+  document.getElementById('examContent').innerHTML = `
+    <div class="question">
+      <div class="qmeta">
+        <span class="qnumber">Question ${idx + 1} of ${QUESTIONS.length}</span>
+        <span class="qtopic">${escapeHtml(q.topic)}</span>
+      </div>
+      <div class="stem">${escapeHtml(q.stem)}</div>
+      <div class="options">${optionsHtml}</div>
+      <div class="nav">
+        <button onclick="prevQ()" ${idx === 0 ? 'disabled' : ''}>← Previous</button>
+        <button class="flag ${isFlagged ? 'flagged' : ''}" onclick="toggleFlag(${q.id})">${flagLabel}</button>
+        <button class="primary" onclick="nextQ()" ${isLast ? 'disabled' : ''}>Next →</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('progressInfo').textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
+  updateGrid('qgrid', false);
+  updateSubmitSummary();
+}
+
+function selectOption(qid, optIdx) {
+  answers[qid] = optIdx;
+  renderQuestion(currentIdx);
+}
+
+function toggleFlag(qid) {
+  flagged[qid] = !flagged[qid];
+  renderQuestion(currentIdx);
+}
+
+function prevQ() {
+  if (currentIdx > 0) renderQuestion(currentIdx - 1);
+}
+
+function nextQ() {
+  if (currentIdx < QUESTIONS.length - 1) renderQuestion(currentIdx + 1);
+}
+
+function buildGrid(gridId, isReview) {
+  const grid = document.getElementById(gridId);
+  grid.innerHTML = '';
+  QUESTIONS.forEach((q, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'qcell';
+    cell.textContent = i + 1;
+    cell.onclick = () => {
+      if (isReview) renderReview(i);
+      else { renderQuestion(i); }
+    };
+    grid.appendChild(cell);
+  });
+  updateGrid(gridId, isReview);
+}
+
+function updateGrid(gridId, isReview) {
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
+  const cells = grid.children;
+  for (let i = 0; i < cells.length; i++) {
+    const q = QUESTIONS[i];
+    const cell = cells[i];
+    cell.classList.remove('answered', 'flagged', 'current', 'correct', 'wrong');
+    if (isReview) {
+      if (answers[q.id] === q.answer) cell.classList.add('correct');
+      else cell.classList.add('wrong');
+      if (i === reviewIdx) cell.classList.add('current');
+    } else {
+      if (answers[q.id] !== undefined) cell.classList.add('answered');
+      if (flagged[q.id]) cell.classList.add('flagged');
+      if (i === currentIdx) cell.classList.add('current');
+    }
+  }
+}
+
+function toggleGrid() {
+  document.getElementById('qgrid').classList.toggle('show');
+  const r = document.getElementById('qgridReview');
+  if (r) r.classList.toggle('show');
+  const btns = [document.getElementById('gridToggle'), document.getElementById('gridToggle2')];
+  btns.forEach(b => {
+    if (b) {
+      const isShown = document.getElementById('qgrid').classList.contains('show') ||
+                      (r && r.classList.contains('show'));
+      b.textContent = isShown ? 'Hide question overview' : 'Show question overview';
+    }
+  });
+}
+
+function updateSubmitSummary() {
+  const answered = Object.keys(answers).length;
+  const flagCount = Object.values(flagged).filter(v => v).length;
+  const remaining = QUESTIONS.length - answered;
+  document.getElementById('submitSummary').textContent =
+    `${answered} answered · ${flagCount} flagged · ${remaining} unanswered`;
+}
+
+function showModal(title, message, onConfirm, confirmLabel) {
+  document.getElementById('modalTitle').textContent = title || 'Confirm';
+  document.getElementById('modalMessage').textContent = message;
+  const btn = document.getElementById('modalConfirmBtn');
+  btn.textContent = confirmLabel || 'Submit';
+  // Replace handler each time (avoid stacking listeners)
+  btn.onclick = function() {
+    hideModal();
+    onConfirm();
+  };
+  document.getElementById('modalBackdrop').classList.add('show');
+}
+
+function hideModal(event) {
+  // If called from backdrop click, only close if backdrop itself was clicked
+  if (event && event.target.id !== 'modalBackdrop') return;
+  document.getElementById('modalBackdrop').classList.remove('show');
+}
+
+function confirmSubmit() {
+  const answered = Object.keys(answers).length;
+  const remaining = QUESTIONS.length - answered;
+  let msg = 'Submit the exam now? You will see your score and full review of all questions.';
+  if (remaining > 0) {
+    msg = `You have ${remaining} unanswered question${remaining > 1 ? 's' : ''}. ` +
+          `Submit anyway? (Unanswered questions are counted wrong — there's no penalty for guessing.)`;
+  }
+  showModal('Submit exam', msg, submitExam, 'Submit');
+}
+
+function submitExam() {
+  if (examSubmitted) return;
+  examSubmitted = true;
+  if (timerInterval) clearInterval(timerInterval);
+  showResults();
+}
+
+function showResults() {
+  document.getElementById('examUI').style.display = 'none';
+  document.getElementById('resultsScreen').style.display = 'block';
+
+  const score = QUESTIONS.filter(q => answers[q.id] === q.answer).length;
+  const pct = score / QUESTIONS.length;
+  const pctDisplay = Math.round(pct * 100);
+
+  document.getElementById('finalScore').textContent = `${score} / ${QUESTIONS.length}`;
+  document.getElementById('finalPercent').textContent = `${pctDisplay}%`;
+
+  const passed = pct >= PASS_MARK;
+  document.getElementById('passFailBadge').innerHTML =
+    `<div class="pass-fail ${passed ? 'pass' : 'fail'}">
+      ${passed ? '✓ ABOVE PASS MARK (~65%)' : 'BELOW PASS MARK (~65%)'}
+    </div>`;
+
+  let verdict = '';
+  if (pct >= 0.85) verdict = "Excellent — well above the pass mark. Focus your remaining time on whichever specific topics showed any weakness below.";
+  else if (pct >= 0.70) verdict = "Strong performance, comfortably above the pass mark. Drill the weak topic areas below to consolidate.";
+  else if (pct >= 0.55) verdict = "On the edge of the pass mark. Targeted study of the weak areas below should push you well over.";
+  else verdict = "Significant gaps to address — but this is good information to have now, not after the real exam. Focus on the weakest topic areas first.";
+  document.getElementById('verdictText').textContent = verdict;
+
+  // Topic breakdown
+  const topicStats = {}, typeStats = {};
+  QUESTIONS.forEach(q => {
+    const correct = answers[q.id] === q.answer;
+    topicStats[q.topic] = topicStats[q.topic] || { c: 0, t: 0 };
+    topicStats[q.topic].t++;
+    if (correct) topicStats[q.topic].c++;
+    typeStats[q.type] = typeStats[q.type] || { c: 0, t: 0 };
+    typeStats[q.type].t++;
+    if (correct) typeStats[q.type].c++;
+  });
+  function renderBreakdown(stats, elId) {
+    const rows = Object.entries(stats).sort((a,b) => (b[1].c/b[1].t) - (a[1].c/a[1].t));
+    document.getElementById(elId).innerHTML = rows.map(([name, s]) => {
+      const p = s.c / s.t;
+      const cls = p >= 0.75 ? 'good' : p >= 0.5 ? 'mid' : 'weak';
+      return `<div class="breakdown-row">
+        <span class="label">${escapeHtml(name)}</span>
+        <span class="score ${cls}">${s.c} / ${s.t} (${Math.round(p*100)}%)</span>
+      </div>`;
+    }).join('');
+  }
+  renderBreakdown(topicStats, 'topicBreakdown');
+  renderBreakdown(typeStats, 'typeBreakdown');
+}
+
+function showReview() {
+  document.getElementById('resultsScreen').style.display = 'none';
+  document.getElementById('reviewScreen').style.display = 'block';
+  buildGrid('qgridReview', true);
+  reviewIdx = 0;
+  renderReview(0);
+}
+
+function showResultsFromReview() {
+  document.getElementById('reviewScreen').style.display = 'none';
+  document.getElementById('resultsScreen').style.display = 'block';
+}
+
+function renderReview(idx) {
+  reviewIdx = idx;
+  const q = QUESTIONS[idx];
+  const userAnswer = answers[q.id];
+  const wasCorrect = userAnswer === q.answer;
+  const userAnswered = userAnswer !== undefined;
+
+  let optionsHtml = '';
+  q.options.forEach((text, i) => {
+    let classes = 'option locked';
+    if (i === q.answer) classes += ' correct';
+    else if (i === userAnswer) classes += ' wrong';
+    else classes += ' dimmed';
+    optionsHtml += `
+      <div class="${classes}">
+        <span class="option-letter">${LETTERS[i]}.</span>
+        <span>${escapeHtml(text)}</span>
+      </div>`;
+  });
+
+  let verdictText;
+  if (!userAnswered) {
+    verdictText = `Not answered — correct answer is ${LETTERS[q.answer]}`;
+  } else if (wasCorrect) {
+    verdictText = `✓ Correct`;
+  } else {
+    verdictText = `✗ You answered ${LETTERS[userAnswer]} — correct answer is ${LETTERS[q.answer]}`;
+  }
+
+  document.getElementById('reviewContent').innerHTML = `
+    <div class="question">
+      <div class="qmeta">
+        <span class="qnumber">Question ${idx + 1} of ${QUESTIONS.length}</span>
+        <span class="qtopic">${escapeHtml(q.topic)} · ${escapeHtml(q.type)}</span>
+      </div>
+      <div class="stem">${escapeHtml(q.stem)}</div>
+      <div class="options">${optionsHtml}</div>
+      <div class="feedback show ${wasCorrect ? 'correct' : 'wrong'}">
+        <div class="verdict">${verdictText}</div>
+        <div>${escapeHtml(q.explanation).replace(/\n/g, '<br>')}</div>
+      </div>
+      <div class="nav">
+        <button onclick="renderReview(${idx - 1})" ${idx === 0 ? 'disabled' : ''}>← Previous</button>
+        <button class="primary" onclick="renderReview(${idx + 1})" ${idx === QUESTIONS.length - 1 ? 'disabled' : ''}>Next →</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('reviewProgress').textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
+  updateGrid('qgridReview', true);
+}
+
+// Keyboard navigation during exam (not review)
+document.addEventListener('keydown', (e) => {
+  if (document.getElementById('examUI').style.display === 'none' &&
+      document.getElementById('reviewScreen').style.display === 'none') return;
+
+  const inReview = document.getElementById('reviewScreen').style.display !== 'none';
+  if (inReview) {
+    if (e.key === 'ArrowRight' && reviewIdx < QUESTIONS.length - 1) renderReview(reviewIdx + 1);
+    if (e.key === 'ArrowLeft' && reviewIdx > 0) renderReview(reviewIdx - 1);
+    return;
+  }
+
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') nextQ();
+  else if (e.key === 'ArrowLeft') prevQ();
+  else if (['1','2','3','4'].includes(e.key)) {
+    const q = QUESTIONS[currentIdx];
+    selectOption(q.id, parseInt(e.key) - 1);
+  } else if (['a','b','c','d','A','B','C','D'].includes(e.key)) {
+    const q = QUESTIONS[currentIdx];
+    selectOption(q.id, 'ABCD'.indexOf(e.key.toUpperCase()));
+  } else if (e.key === 'f' || e.key === 'F') {
+    const q = QUESTIONS[currentIdx];
+    toggleFlag(q.id);
+  }
+});
+</script>
+</body>
+</html>

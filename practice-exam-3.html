@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NPPE Practice Exam — Half 3</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root {
+    --bg: #f4f1ea;
+    --paper: #fffdf7;
+    --ink: #1a1a1a;
+    --ink-soft: #555;
+    --accent: #8b3a3a;
+    --accent-soft: #c9a47a;
+    --line: #d8d1c0;
+    --back-bg: #faf3e0;
+    --shadow: rgba(60, 40, 20, 0.12);
+    --shadow-deep: rgba(60, 40, 20, 0.22);
+    --correct: #2d6a2f;
+    --correct-bg: #e6f0e2;
+    --wrong: #a33;
+    --wrong-bg: #f5e2e2;
+    --flag: #d4a017;
+    --flag-bg: #fef5d8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100%; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(139, 58, 58, 0.04), transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(201, 164, 122, 0.06), transparent 50%);
+    color: var(--ink);
+    font-family: Georgia, 'Iowan Old Style', serif;
+    padding: 16px 12px 80px;
+    line-height: 1.5;
+  }
+
+  /* Sticky header bar */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px var(--shadow);
+    max-width: 800px;
+    margin: 0 auto 16px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .topbar .title {
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 14px;
+    font-family: 'Iowan Old Style', Georgia, serif;
+  }
+  .topbar .progress-info {
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .topbar .timer {
+    margin-left: auto;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    font-size: 16px;
+    padding: 4px 10px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--back-bg);
+  }
+  .topbar .timer.warning { color: #b08400; border-color: #e0d090; background: var(--flag-bg); }
+  .topbar .timer.critical { color: var(--wrong); border-color: #d4a8a8; background: var(--wrong-bg); }
+
+  .container { max-width: 800px; margin: 0 auto; }
+
+  /* Question card */
+  .question {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 24px 30px;
+    box-shadow: 0 1px 2px var(--shadow), 0 12px 28px -8px var(--shadow-deep);
+    margin-bottom: 14px;
+  }
+  @media (max-width: 600px) {
+    .question { padding: 18px 16px; }
+  }
+
+  .qmeta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .qnumber {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .qtopic {
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+
+  .stem {
+    font-size: clamp(14px, 1.9vw, 16px);
+    font-weight: 500;
+    line-height: 1.55;
+    color: var(--ink);
+    margin-bottom: 18px;
+  }
+
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .option {
+    display: flex;
+    align-items: flex-start;
+    padding: 11px 14px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--paper);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-size: clamp(13px, 1.7vw, 14px);
+    line-height: 1.5;
+  }
+  .option:hover:not(.locked) {
+    border-color: var(--accent);
+    background: #faf6ee;
+  }
+  .option-letter {
+    font-weight: 700;
+    color: var(--accent);
+    margin-right: 12px;
+    min-width: 20px;
+    font-family: Georgia, serif;
+  }
+  .option.selected {
+    border-color: var(--accent);
+    background: #faf6ee;
+  }
+  .option.locked { cursor: default; }
+  .option.locked.correct {
+    border-color: var(--correct);
+    background: var(--correct-bg);
+  }
+  .option.locked.correct .option-letter { color: var(--correct); }
+  .option.locked.wrong {
+    border-color: var(--wrong);
+    background: var(--wrong-bg);
+  }
+  .option.locked.wrong .option-letter { color: var(--wrong); }
+  .option.locked.dimmed { opacity: 0.55; }
+
+  .feedback {
+    margin-top: 16px;
+    padding: 14px 16px;
+    border-radius: 4px;
+    border-left: 3px solid var(--accent);
+    background: var(--back-bg);
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    display: none;
+  }
+  .feedback.show { display: block; }
+  .feedback .verdict {
+    font-weight: 700;
+    margin-bottom: 8px;
+    font-family: Georgia, serif;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+  }
+  .feedback.correct { border-left-color: var(--correct); background: var(--correct-bg); }
+  .feedback.correct .verdict { color: var(--correct); }
+  .feedback.wrong { border-left-color: var(--wrong); background: var(--wrong-bg); }
+  .feedback.wrong .verdict { color: var(--wrong); }
+
+  /* Navigation */
+  .nav {
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  button {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 9px 16px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-weight: 600;
+  }
+  button:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  button.primary {
+    background: var(--accent);
+    color: var(--paper);
+    border-color: var(--accent);
+  }
+  button.primary:hover:not(:disabled) {
+    background: #6e2d2d;
+    color: var(--paper);
+  }
+  button.flag {
+    background: var(--paper);
+    border-color: var(--line);
+  }
+  button.flag.flagged {
+    background: var(--flag-bg);
+    color: #b08400;
+    border-color: var(--flag);
+  }
+  button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* Question grid (overview/jump) */
+  .grid-toggle {
+    text-align: center;
+    margin: 16px 0 8px;
+  }
+  .grid-toggle button {
+    font-size: 12px;
+    padding: 6px 14px;
+  }
+  .qgrid {
+    display: none;
+    grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+    gap: 6px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px var(--shadow);
+  }
+  .qgrid.show { display: grid; }
+  .qgrid .qcell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--paper);
+    transition: all 0.1s ease;
+    font-variant-numeric: tabular-nums;
+  }
+  .qcell:hover { border-color: var(--accent); }
+  .qcell.answered { background: #e8e2d0; color: var(--ink); }
+  .qcell.flagged { background: var(--flag-bg); border-color: var(--flag); color: #b08400; }
+  .qcell.current { box-shadow: 0 0 0 2px var(--accent); }
+  .qcell.correct { background: var(--correct-bg); border-color: var(--correct); color: var(--correct); }
+  .qcell.wrong { background: var(--wrong-bg); border-color: var(--wrong); color: var(--wrong); }
+
+  /* Submit area */
+  .submit-area {
+    text-align: center;
+    margin: 20px 0;
+    padding: 16px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+  }
+  .submit-area .summary {
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin-bottom: 12px;
+  }
+  .submit-area button {
+    font-size: 15px;
+    padding: 12px 28px;
+  }
+
+  /* Results */
+  .results {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 28px;
+    box-shadow: 0 1px 2px var(--shadow), 0 12px 28px -8px var(--shadow-deep);
+    text-align: center;
+    display: none;
+    margin-bottom: 20px;
+  }
+  .results.show { display: block; }
+  .score-big {
+    font-size: clamp(48px, 10vw, 72px);
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    font-family: 'Iowan Old Style', Georgia, serif;
+  }
+  .score-label {
+    font-size: 14px;
+    color: var(--ink-soft);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 4px;
+    margin-bottom: 20px;
+  }
+  .pass-fail {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 3px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .pass-fail.pass { background: var(--correct-bg); color: var(--correct); border: 1px solid var(--correct); }
+  .pass-fail.fail { background: var(--wrong-bg); color: var(--wrong); border: 1px solid var(--wrong); }
+  .verdict-text {
+    font-size: 14px;
+    font-style: italic;
+    color: var(--ink);
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  .breakdown {
+    text-align: left;
+    margin: 18px 0;
+    padding: 16px;
+    background: var(--back-bg);
+    border-radius: 4px;
+  }
+  .breakdown h3 {
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    font-size: 13px;
+    border-bottom: 1px solid var(--line);
+  }
+  .breakdown-row:last-child { border-bottom: none; }
+  .breakdown-row .label { color: var(--ink-soft); }
+  .breakdown-row .score {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+  .breakdown-row .score.good { color: var(--correct); }
+  .breakdown-row .score.mid { color: #b08400; }
+  .breakdown-row .score.weak { color: var(--wrong); }
+
+  /* Start screen */
+  .start-screen {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 36px 32px;
+    box-shadow: 0 1px 2px var(--shadow), 0 12px 28px -8px var(--shadow-deep);
+    text-align: center;
+    max-width: 700px;
+    margin: 40px auto 0;
+  }
+  .start-screen h1 {
+    font-size: 28px;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .start-screen h1 .accent { color: var(--accent); font-style: italic; }
+  .start-screen .start-subtitle {
+    font-size: 13px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 22px;
+  }
+  .start-screen .start-info {
+    text-align: left;
+    background: var(--back-bg);
+    padding: 18px 22px;
+    border-radius: 4px;
+    margin: 18px 0 24px;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .start-screen button {
+    font-size: 15px;
+    padding: 12px 32px;
+  }
+
+  /* In-page confirm modal (replaces native confirm() which is unreliable in mobile in-app browsers) */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 24px 28px;
+    max-width: 440px;
+    width: 100%;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  }
+  .modal h2 {
+    font-family: 'Iowan Old Style', Georgia, serif;
+    font-size: 18px;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .modal p {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--ink);
+    margin-bottom: 18px;
+  }
+  .modal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .modal-buttons button {
+    min-width: 100px;
+  }
+</style>
+</head>
+<body>
+
+<div id="startScreen" class="start-screen">
+  <h1>NPPE <span class="accent">Practice Exam (Half 3)</span></h1>
+  <div class="start-subtitle">Timed practice exam · simulated conditions</div>
+  <div class="start-info">
+    <b>Format:</b> 50 questions, multiple choice (A-D)<br>
+    <b>Time limit:</b> 1 hour 7 min 30 sec<br>
+    <b>Scoring:</b> 1 point each, no penalty for guessing — answer everything<br>
+    <b>During the exam:</b> you can flag questions to revisit, navigate freely, and change answers<br>
+    <b>After submitting:</b> you'll see your score, performance breakdown, and full explanations for every question<br>
+    <b>Pass mark:</b> ~65% (the real NPPE threshold)
+  </div>
+  <p style="font-size:13px; color:var(--ink-soft); margin-bottom:18px; font-style:italic;">
+    Make sure you have an uninterrupted block of time. The timer starts when you begin.
+  </p>
+  <button class="primary" onclick="startExam()">Start Exam</button>
+</div>
+
+<div id="examUI" style="display:none;">
+
+  <div class="topbar">
+    <span class="title">NPPE Practice</span>
+    <span class="progress-info" id="progressInfo">Question 1 of 50</span>
+    <span class="timer" id="timer">1 hour 7 min 30 sec</span>
+  </div>
+
+  <div class="grid-toggle">
+    <button onclick="toggleGrid()" id="gridToggle">Show question overview</button>
+  </div>
+
+  <div class="qgrid" id="qgrid"></div>
+
+  <div class="container" id="examContent"></div>
+
+  <div class="submit-area">
+    <div class="summary" id="submitSummary">0 answered · 0 flagged · 50 remaining</div>
+    <button class="primary" onclick="confirmSubmit()">Submit Exam</button>
+  </div>
+
+</div>
+
+<div id="resultsScreen" class="container" style="display:none;">
+  <div class="results show">
+    <div class="score-big" id="finalScore">0/50</div>
+    <div class="score-label" id="finalPercent">0%</div>
+    <div id="passFailBadge"></div>
+    <div class="verdict-text" id="verdictText"></div>
+
+    <div class="breakdown">
+      <h3>Performance by Topic</h3>
+      <div id="topicBreakdown"></div>
+    </div>
+
+    <div class="breakdown">
+      <h3>Performance by Question Type</h3>
+      <div id="typeBreakdown"></div>
+    </div>
+
+    <div style="margin-top:20px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+      <button class="primary" onclick="showReview()">Review All Questions</button>
+      <button onclick="location.reload()">Retake Exam</button>
+    </div>
+  </div>
+</div>
+
+<div id="reviewScreen" style="display:none;">
+  <div class="topbar">
+    <span class="title">Exam Review</span>
+    <span class="progress-info" id="reviewProgress">Question 1 of 50</span>
+    <button onclick="showResultsFromReview()" style="margin-left:auto; font-size:12px; padding:5px 10px;">Back to results</button>
+  </div>
+  <div class="grid-toggle">
+    <button onclick="toggleGrid()" id="gridToggle2">Show question overview</button>
+  </div>
+  <div class="qgrid" id="qgridReview"></div>
+  <div class="container" id="reviewContent"></div>
+</div>
+
+<!-- In-page confirm modal (works on mobile in-app browsers where native confirm() may not) -->
+<div id="modalBackdrop" class="modal-backdrop" onclick="hideModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h2 id="modalTitle">Confirm</h2>
+    <p id="modalMessage"></p>
+    <div class="modal-buttons">
+      <button onclick="hideModal()">Cancel</button>
+      <button class="primary" id="modalConfirmBtn">Submit</button>
+    </div>
+  </div>
+</div>
+
+<script id="dataScript" type="application/json">{"questions": [{"id": 1, "topic": "I. Professionalism", "type": "Direct recall", "stem": "Which of the following is the primary role of a self-regulating profession?", "options": ["To increase the compensation of its Members", "To protect the public interest", "To restrict entry into the profession", "To promote the use of its services"], "answer": 1, "explanation": "B is correct. The primary role of any self-regulating profession is the protection of the public interest. All other functions of the Association are subordinate to this purpose."}, {"id": 2, "topic": "I. Professionalism", "type": "Categorization", "stem": "Which of the following is NOT a characteristic of a profession?", "options": ["Specialized body of knowledge", "Service to the public", "Code of Ethics", "Guaranteed minimum salary"], "answer": 3, "explanation": "D is correct. A guaranteed minimum salary is not a characteristic of a profession. The defining characteristics are specialized knowledge, service to the public, a code of ethics, and self-regulation."}, {"id": 3, "topic": "I. Professionalism", "type": "Direct recall", "stem": "The body responsible for the accreditation of engineering programs at Canadian universities is:", "options": ["The Canadian Engineering Accreditation Board (CEAB)", "The provincial Association where the university is located", "The federal Department of Education", "The National Council of Examiners"], "answer": 0, "explanation": "A is correct. CEAB, operating under Engineers Canada, accredits university engineering programs across Canada. Graduates of CEAB-accredited programs meet the academic requirement for licensure in any province."}, {"id": 4, "topic": "I. Professionalism", "type": "Best-answer", "stem": "A graduate of an engineering program has not yet completed the experience requirements for licensure. The most appropriate title for this person is:", "options": ["Professional Engineer", "Engineer-in-Training", "Licensed Engineer", "Junior P.Eng."], "answer": 1, "explanation": "B is correct. A graduate working toward licensure is properly referred to as an Engineer-in-Training (EIT) or Member-in-Training, depending on the jurisdiction. The other titles are protected and may not be used by unlicensed individuals."}, {"id": 5, "topic": "I. Professionalism", "type": "Direct recall", "stem": "The Iron Ring received by Canadian engineering graduates is:", "options": ["A licence to practise engineering", "Proof that the graduate has completed the experience requirement", "A symbol of obligation with no legal status", "Required to be worn while practising engineering"], "answer": 2, "explanation": "C is correct. The Iron Ring is a symbol of obligation worn by Canadian engineers. It has no legal status and is not a licence to practise."}, {"id": 6, "topic": "II. Ethics", "type": "Best-answer", "stem": "Under most Provincial and Territorial Codes of Ethics, the duty that takes precedence over all others is the duty to:", "options": ["The Member's employer", "The Member's client", "The public", "The Member's profession"], "answer": 2, "explanation": "C is correct. Under every Provincial and Territorial Code of Ethics, the duty to the public is paramount and overrides duties to the employer, client, and the profession."}, {"id": 7, "topic": "II. Ethics", "type": "Ethical scenario", "stem": "You are reviewing a proposal from a contractor and you discover that the contractor is owned by your brother. Your most appropriate action is to:", "options": ["Proceed with the review since you have no financial interest", "Disclose the relationship to your employer and let them decide how to proceed", "Quietly reject the proposal to avoid any appearance of bias", "Recuse yourself from all future contractor evaluations"], "answer": 1, "explanation": "B is correct. This is a perceived conflict of interest. The Member's duty is to fully disclose the relationship in writing and allow the employer to determine appropriate next steps."}, {"id": 8, "topic": "II. Ethics", "type": "Ethical scenario", "stem": "Your supervisor instructs you to seal a set of drawings prepared by another engineer in the firm. You have not reviewed those drawings. Your most appropriate action is to:", "options": ["Seal the drawings as instructed by your supervisor", "Seal the drawings after a brief glance to confirm reasonableness", "Refuse to seal drawings that you have not personally prepared or thoroughly reviewed", "Seal the drawings but add a note that the original engineer prepared them"], "answer": 2, "explanation": "C is correct. Sealing drawings that the Member has not prepared, supervised, or thoroughly reviewed constitutes professional misconduct under most Provincial and Territorial Acts."}, {"id": 9, "topic": "II. Ethics", "type": "Ethical scenario", "stem": "You discover that a colleague has been falsifying test reports to meet project deadlines. The reports involve a structure used by the public. You should first:", "options": ["Report your colleague to the police", "Discuss your concerns with the colleague directly", "Document your concerns and bring them to management", "Resign from the firm to distance yourself from the misconduct"], "answer": 2, "explanation": "C is correct. The first step is to document the concerns and raise them through the organization. If management does not address the issue, escalation to the regulator is appropriate."}, {"id": 10, "topic": "II. Ethics", "type": "Ethical scenario", "stem": "You are offered a paid expert witness assignment for a court case. The case involves an engineering issue outside your area of competence. The most appropriate response is to:", "options": ["Accept the assignment to broaden your professional experience", "Accept the assignment and consult specialists as needed", "Decline the assignment because it is outside your area of competence", "Accept the assignment but limit your testimony to general principles"], "answer": 2, "explanation": "C is correct. A Member must only undertake work in areas where they have adequate training and experience. Acting as an expert witness outside one's competence violates the Code of Ethics."}, {"id": 11, "topic": "II. Ethics", "type": "Ethical scenario", "stem": "A contractor sends you a $200 bottle of wine at Christmas. You are currently supervising work being performed by that contractor. Your most appropriate response is to:", "options": ["Accept the gift since it is a seasonal tradition", "Accept the gift but share it with the office", "Return the gift and disclose the offer to your employer", "Accept the gift only after you complete the current project"], "answer": 2, "explanation": "C is correct. A gift of significant value from a contractor whose work you are supervising creates an actual or perceived conflict of interest. The gift should be returned and the offer disclosed."}, {"id": 12, "topic": "II. Ethics", "type": "Best-answer", "stem": "A Member's primary obligation regarding sustainable development is to:", "options": ["Comply with all environmental regulations", "Refuse all projects that have any environmental impact", "Consider and promote sustainable development as part of the duty to society", "Defer all environmental decisions to environmental specialists"], "answer": 2, "explanation": "C is correct. Sustainable development is a recognized principle in modern engineering ethics. Members are expected to consider and promote it as part of their duty to society, which extends beyond mere regulatory compliance."}, {"id": 13, "topic": "II. Ethics", "type": "Ethical scenario", "stem": "A Member becomes aware that another Professional Engineer has been seriously negligent in a design that has been built. There is no immediate public danger. The most appropriate course of action is to:", "options": ["Take no action since there is no immediate danger", "Inform the other Member directly and let them resolve the matter", "Report the matter to the Association", "Wait until an incident occurs before reporting"], "answer": 2, "explanation": "C is correct. Members have a duty to report apparent misconduct of other Members to the Association. The Association has the authority and procedural fairness to investigate properly."}, {"id": 14, "topic": "II. Ethics", "type": "Categorization", "stem": "Plagiarism by a Member is best characterized as:", "options": ["Acceptable when the content is technically accurate", "Acceptable for internal company use", "A breach of the Code of Ethics regardless of content accuracy", "Acceptable when the original author is unknown"], "answer": 2, "explanation": "C is correct. Plagiarism breaches the Code of Ethics requirement of integrity and honesty. Technical accuracy of the content is irrelevant to the dishonesty of the misattribution."}, {"id": 15, "topic": "III. Professional Practice", "type": "Best-answer", "stem": "To most effectively reduce exposure to professional liability claims, a Professional Engineer or Professional Geoscientist should:", "options": ["Carry the maximum available errors and omissions insurance", "Include limitation-of-liability clauses in every client contract", "Maintain professional standards and competence in practice", "Accept only small projects with established clients"], "answer": 2, "explanation": "C is correct. Maintaining professional standards and competence is the most effective way to reduce liability exposure. Insurance and contract clauses address consequences after problems occur but do not prevent them."}, {"id": 16, "topic": "III. Professional Practice", "type": "Direct recall", "stem": "The seal of a Professional Engineer or Professional Geoscientist signifies that:", "options": ["The work has been approved by the Member's employer", "The Member guarantees that the work will perform without defect", "The Member has prepared, supervised, or thoroughly reviewed the work and takes professional responsibility", "The work has been reviewed by the Association"], "answer": 2, "explanation": "C is correct. The seal indicates that the Member has prepared, supervised, or thoroughly reviewed the work and accepts professional responsibility for it."}, {"id": 17, "topic": "III. Professional Practice", "type": "Direct recall", "stem": "A claim for damages caused by a faulty engineering design is most likely to be covered by which type of insurance?", "options": ["Commercial General Liability (CGL)", "Workers' Compensation", "Professional Errors and Omissions (E&O)", "Property and Casualty"], "answer": 2, "explanation": "C is correct. E&O insurance covers claims arising from professional negligence. CGL policies specifically exclude professional services."}, {"id": 18, "topic": "III. Professional Practice", "type": "Best-answer", "stem": "The principle of due diligence in engineering practice refers to:", "options": ["Eliminating all risk from a project", "Taking reasonable steps to identify and address foreseeable risks", "Following only the minimum requirements of applicable codes", "Documenting all decisions in writing"], "answer": 1, "explanation": "B is correct. Due diligence is reasonable, not perfect, care in identifying and addressing foreseeable risks. It is the standard against which an Engineer's actions are evaluated."}, {"id": 19, "topic": "III. Professional Practice", "type": "Direct recall", "stem": "A 'hazard' is best defined as:", "options": ["The probability of harm multiplied by its severity", "An event that has already caused damage", "A source of potential harm", "A regulatory violation"], "answer": 2, "explanation": "C is correct. A hazard is a source of potential harm. The probability of harm times its severity is the definition of risk."}, {"id": 20, "topic": "III. Professional Practice", "type": "Direct recall", "stem": "Under most Provincial Occupational Health and Safety legislation, duties for workplace safety are imposed on:", "options": ["Employers only", "Supervisors only", "Workers only", "Employers, supervisors, and workers"], "answer": 3, "explanation": "D is correct. The Internal Responsibility System imposes safety duties on employers, supervisors, and workers, each with distinct responsibilities."}, {"id": 21, "topic": "III. Professional Practice", "type": "Best-answer", "stem": "The most appropriate method for procuring engineering consulting services is:", "options": ["Lowest bid selection", "Qualifications-Based Selection (QBS)", "Sole source without competition", "Random selection from a registered list"], "answer": 1, "explanation": "B is correct. QBS is the recommended method for procuring engineering services. Consultants are selected on qualifications first, and fees are negotiated with the top-ranked firm."}, {"id": 22, "topic": "III. Professional Practice", "type": "Direct recall", "stem": "An 'as-built' drawing is:", "options": ["A preliminary drawing issued for review", "The original design drawing prepared by the Engineer", "A drawing showing what was actually constructed in the field", "A drawing certified by the building inspector"], "answer": 2, "explanation": "C is correct. As-built drawings show what was actually constructed in the field, including any deviations from the original design."}, {"id": 23, "topic": "III. Professional Practice", "type": "Direct recall", "stem": "A clause in a construction contract specifying a pre-agreed amount payable per day of delay is known as:", "options": ["An indemnity clause", "A force majeure clause", "A liquidated damages clause", "A quantum meruit clause"], "answer": 2, "explanation": "C is correct. A liquidated damages clause specifies a pre-agreed amount for delay. To be enforceable, the amount must be a genuine pre-estimate of damages, not a penalty."}, {"id": 24, "topic": "III. Professional Practice", "type": "Direct recall", "stem": "ISO 9001 relates to:", "options": ["Quality management systems", "Environmental management systems", "Occupational health and safety systems", "Information security systems"], "answer": 0, "explanation": "A is correct. ISO 9001 is the international standard for quality management systems."}, {"id": 25, "topic": "III. Professional Practice", "type": "Best-answer", "stem": "A client requests work that is significantly beyond the original scope of the engineering contract. The most appropriate action is to:", "options": ["Perform the work to maintain the client relationship", "Refuse the additional work", "Issue a written change order describing the additional work and fee, and obtain client approval before proceeding", "Perform the work and bill for it at the end of the project"], "answer": 2, "explanation": "C is correct. Scope changes should always be documented in a written change order with associated fees, obtained from the client before the work begins."}, {"id": 26, "topic": "III. Professional Practice", "type": "Best-practice", "stem": "A technical dispute between a Consulting Engineer and the client may be most expeditiously resolved through:", "options": ["A lawsuit", "Filing a complaint with the Association", "Arbitration", "Government intervention"], "answer": 2, "explanation": "C is correct. Arbitration provides an effective, expeditious resolution to technical disputes, often with an arbitrator chosen for technical expertise."}, {"id": 27, "topic": "III. Professional Practice", "type": "Direct recall", "stem": "Engineering project records should be retained, at minimum, for:", "options": ["One year after project completion", "Three years after project completion", "At least the applicable statutory limitation period", "Records may be destroyed once the final invoice is paid"], "answer": 2, "explanation": "C is correct. Records should be retained for at least the applicable limitation period to support potential defence of liability claims and regulatory inquiries."}, {"id": 28, "topic": "III. Professional Practice", "type": "Categorization", "stem": "Which of the following is NOT one of the four standard strategies for managing risk?", "options": ["Avoid the risk", "Reduce or mitigate the risk", "Transfer the risk to another party", "Conceal the risk from affected parties"], "answer": 3, "explanation": "D is correct. The four standard risk management strategies are avoid, reduce or mitigate, transfer, and retain. Concealing risk from affected parties is not a legitimate strategy."}, {"id": 29, "topic": "III. Professional Practice", "type": "Best-answer", "stem": "The most important reason for an Engineer to maintain thorough project documentation is to:", "options": ["Impress clients during project reviews", "Support quality assurance and provide evidence of meeting the standard of care", "Meet Association continuing competence requirements", "Generate billable hours for the firm"], "answer": 1, "explanation": "B is correct. Documentation supports quality assurance and provides essential evidence that the standard of care was met, should liability claims or disciplinary matters arise."}, {"id": 30, "topic": "IV. Law", "type": "Legal application", "stem": "All of the following are essential elements of a valid contract EXCEPT:", "options": ["Offer and acceptance", "Consideration", "Written documentation", "Intention to create legal relations"], "answer": 2, "explanation": "C is correct. Most contracts do not need to be in writing to be enforceable. Only specific categories under the Statute of Frauds require writing."}, {"id": 31, "topic": "IV. Law", "type": "Legal application", "stem": "You make a written offer to provide design services for $30,000. The client replies that they accept the offer at $25,000. Under contract law this reply is:", "options": ["A valid acceptance forming a contract at $25,000", "A counter-offer which terminates the original offer", "An invitation to treat", "A partial acceptance for $25,000 of the work"], "answer": 1, "explanation": "B is correct. Any change in terms is a counter-offer, which terminates the original offer. Acceptance must be unconditional."}, {"id": 32, "topic": "IV. Law", "type": "Legal application", "stem": "For a plaintiff to succeed in a tort negligence claim against an Engineer, all of the following must be proven EXCEPT:", "options": ["A duty of care was owed by the Engineer", "The Engineer breached the standard of care", "The plaintiff suffered damages caused by the breach", "The plaintiff and the Engineer had a written contract"], "answer": 3, "explanation": "D is correct. Negligence does not require a contract. The neighbour principle from Donoghue v. Stevenson established that duty of care can exist without contractual privity."}, {"id": 33, "topic": "IV. Law", "type": "Direct recall", "stem": "A Canadian patent is granted for a period of:", "options": ["10 years from the date of filing", "15 years from the date of filing", "20 years from the date of filing", "The life of the inventor plus 50 years"], "answer": 2, "explanation": "C is correct. A Canadian patent is valid for 20 years from the filing date. It is not renewable."}, {"id": 34, "topic": "IV. Law", "type": "Direct recall", "stem": "Copyright protection in Canada arises:", "options": ["Only after registration with CIPO", "Automatically upon creation of an original work in fixed form", "Only for works published commercially", "Only for works whose authors are Canadian citizens"], "answer": 1, "explanation": "B is correct. Copyright in Canada arises automatically upon the creation of an original work in fixed form. Registration is optional but can help in disputes."}, {"id": 35, "topic": "IV. Law", "type": "Direct recall", "stem": "A registered Canadian trademark is initially protected for:", "options": ["5 years, renewable indefinitely", "10 years, renewable indefinitely", "20 years, not renewable", "The life of the owner plus 70 years"], "answer": 1, "explanation": "B is correct. A registered Canadian trademark is protected for 10 years and is renewable indefinitely in 10-year increments."}, {"id": 36, "topic": "IV. Law", "type": "Categorization", "stem": "Which of the following is NOT a requirement for a Canadian patent?", "options": ["The invention must be new", "The invention must be useful", "The invention must be non-obvious", "The invention must be commercially successful"], "answer": 3, "explanation": "D is correct. The three requirements for a Canadian patent are novelty, utility, and non-obviousness. Commercial success is not required."}, {"id": 37, "topic": "IV. Law", "type": "Legal application", "stem": "An invention is made by an employee Engineer during work hours, using employer resources, in an area related to the employer's business. The patent rights typically belong to:", "options": ["The employee, as the inventor", "The employer, as the invention was made within the scope of employment", "Both parties jointly", "The Canadian government"], "answer": 1, "explanation": "B is correct. Inventions made by employees within the scope of employment typically belong to the employer, subject to the terms of the employment contract."}, {"id": 38, "topic": "IV. Law", "type": "Direct recall", "stem": "The professional's standard of care establishes the point at which a Professional Member:", "options": ["Has met the minimum requirements for licensure", "May be judged negligent in the performance of services", "Is entitled to charge for services", "Has completed the experience requirement"], "answer": 1, "explanation": "B is correct. The standard of care is used to determine whether a Member has been negligent. It is the standard of a reasonably competent professional in the same specialty."}, {"id": 39, "topic": "IV. Law", "type": "Legal application", "stem": "An Engineer's employee makes a negligent error within the scope of their employment. Liability typically falls on:", "options": ["Only the employee", "Only the employer, under vicarious liability", "Both the employee and the employer", "Neither, since the work was supervised"], "answer": 2, "explanation": "C is correct. Under vicarious liability, the employer is liable for negligent acts of the employee within the scope of employment. The employee remains personally liable as well."}, {"id": 40, "topic": "IV. Law", "type": "Direct recall", "stem": "The doctrine of stare decisis refers to:", "options": ["The principle that courts follow decisions of higher courts", "The rule that contracts must be in writing", "The standard of proof in criminal cases", "The duty of care owed to neighbours"], "answer": 0, "explanation": "A is correct. Stare decisis is the doctrine that courts must follow precedents set by higher courts in the same jurisdiction."}, {"id": 41, "topic": "IV. Law", "type": "Legal application", "stem": "The standard of proof in a civil negligence case in Canada is:", "options": ["Beyond a reasonable doubt", "Balance of probabilities", "Absolute certainty", "Clear and convincing evidence"], "answer": 1, "explanation": "B is correct. The standard of proof in civil cases, including negligence, is the balance of probabilities, meaning more likely than not."}, {"id": 42, "topic": "V. Professional Law", "type": "Direct recall", "stem": "The authority to license Professional Engineers in Canada is held by:", "options": ["Engineers Canada", "The federal government", "The provincial and territorial Associations", "The Canadian Engineering Accreditation Board"], "answer": 2, "explanation": "C is correct. Engineering is regulated provincially and territorially in Canada. Each province or territory has its own Association with licensing authority."}, {"id": 43, "topic": "V. Professional Law", "type": "Direct recall", "stem": "Which of the following is NOT typically a requirement for licensure as a Professional Engineer?", "options": ["An accredited engineering degree or assessed equivalent", "Acceptable engineering work experience", "Successful completion of the NPPE", "Canadian citizenship"], "answer": 3, "explanation": "D is correct. Canadian citizenship is not generally required. Legal status to work in Canada is required but not citizenship specifically."}, {"id": 44, "topic": "V. Professional Law", "type": "Direct recall", "stem": "A Certificate of Authorization is required by:", "options": ["Every individual Professional Engineer", "Every business entity offering engineering services to the public", "Every engineering graduate", "Every government department employing engineers"], "answer": 1, "explanation": "B is correct. A Certificate of Authorization is required for any business entity, whether a sole proprietorship, partnership, or corporation, that offers engineering services to the public."}, {"id": 45, "topic": "V. Professional Law", "type": "Legal application", "stem": "An unlicensed person knowingly performs work that requires a Professional Engineer licence. Under most Provincial and Territorial Acts, who is in violation?", "options": ["Only the unlicensed person", "Only the organization that contracted the unlicensed person", "Both the unlicensed person and the organization that knowingly contracted them", "Only the Association"], "answer": 2, "explanation": "C is correct. Both the unlicensed person and an organization that knowingly contracts an unlicensed person for engineering work are typically in violation of the Act."}, {"id": 46, "topic": "V. Professional Law", "type": "Legal application", "stem": "A non-Member places 'P.Eng.' after their name on a business card. Under the Provincial Act, this conduct is:", "options": ["Permitted free expression", "An offence under the Act, regardless of whether engineering work was performed", "Only an issue if engineering services are actually offered", "Not regulated by the Act"], "answer": 1, "explanation": "B is correct. The title 'P.Eng.' is protected under Provincial Acts. Using a protected title without being licensed is an offence regardless of whether engineering work was performed."}, {"id": 47, "topic": "VI. Regulation & Discipline", "type": "Direct recall", "stem": "The primary purpose of professional discipline is to:", "options": ["Punish Members for wrongdoing", "Protect the public", "Compensate injured parties", "Generate revenue for the Association"], "answer": 1, "explanation": "B is correct. The primary purpose of professional discipline is the protection of the public, not punishment, compensation, or revenue generation."}, {"id": 48, "topic": "VI. Regulation & Discipline", "type": "Categorization", "stem": "According to most Provincial and Territorial Acts, professional discipline applies to:", "options": ["Licensed Members of the Association", "Unregistered engineering graduates", "Any person performing engineering work", "Members of the public who complain to the Association"], "answer": 0, "explanation": "A is correct. Discipline applies to licensed Members. Enforcement, which is a separate process, addresses non-licensed individuals performing engineering work."}, {"id": 49, "topic": "VI. Regulation & Discipline", "type": "Direct recall", "stem": "A complaint about a Member's conduct is typically reviewed first by:", "options": ["The Discipline Committee", "The Complaints Committee", "The Council of the Association", "The courts"], "answer": 1, "explanation": "B is correct. Complaints are reviewed first by the Complaints Committee, which may dismiss the matter, issue advice, or refer it to the Discipline Committee for a formal hearing."}, {"id": 50, "topic": "VI. Regulation & Discipline", "type": "Categorization", "stem": "Which of the following is NOT a possible outcome of a finding of professional misconduct?", "options": ["Reprimand of the Member", "Suspension of the Member's licence", "Revocation of the Member's licence", "Criminal imprisonment of the Member"], "answer": 3, "explanation": "D is correct. The Discipline Committee may reprimand, fine, suspend, or revoke a licence, among other remedies. Criminal imprisonment requires conviction in criminal court, which is a separate process."}], "timeLimit": 4050}</script>
+
+<script>
+const DATA = JSON.parse(document.getElementById('dataScript').textContent);
+const QUESTIONS = DATA.questions;
+const TIME_LIMIT_SECONDS = DATA.timeLimit;  // seconds
+const PASS_MARK = 0.65;
+const LETTERS = ['A', 'B', 'C', 'D'];
+
+let currentIdx = 0;
+let answers = {};   // qid -> selected option idx
+let flagged = {};   // qid -> true
+let timerInterval = null;
+let timeRemaining = TIME_LIMIT_SECONDS;
+let examSubmitted = false;
+let reviewIdx = 0;
+
+function startExam() {
+  document.getElementById('startScreen').style.display = 'none';
+  document.getElementById('examUI').style.display = 'block';
+  buildGrid('qgrid', false);
+  renderQuestion(0);
+  startTimer();
+}
+
+function startTimer() {
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    timeRemaining--;
+    updateTimerDisplay();
+    if (timeRemaining <= 0) {
+      clearInterval(timerInterval);
+      showModal("Time's up", "The time limit has been reached. Your answers will be submitted now.", submitExam, "View Results");
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(timeRemaining / 60);
+  const s = timeRemaining % 60;
+  const display = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  const t = document.getElementById('timer');
+  if (t) t.textContent = display;
+  if (t) {
+    t.classList.toggle('warning', timeRemaining <= 600 && timeRemaining > 300);
+    t.classList.toggle('critical', timeRemaining <= 300);
+  }
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function renderQuestion(idx) {
+  currentIdx = idx;
+  const q = QUESTIONS[idx];
+  const userAnswer = answers[q.id];
+  const isFlagged = flagged[q.id];
+
+  let optionsHtml = '';
+  q.options.forEach((text, i) => {
+    let classes = 'option';
+    if (userAnswer === i) classes += ' selected';
+    optionsHtml += `
+      <div class="${classes}" onclick="selectOption(${q.id}, ${i})">
+        <span class="option-letter">${LETTERS[i]}.</span>
+        <span>${escapeHtml(text)}</span>
+      </div>`;
+  });
+
+  const isLast = idx === QUESTIONS.length - 1;
+  const flagLabel = isFlagged ? '🚩 Flagged' : 'Flag for review';
+
+  document.getElementById('examContent').innerHTML = `
+    <div class="question">
+      <div class="qmeta">
+        <span class="qnumber">Question ${idx + 1} of ${QUESTIONS.length}</span>
+        <span class="qtopic">${escapeHtml(q.topic)}</span>
+      </div>
+      <div class="stem">${escapeHtml(q.stem)}</div>
+      <div class="options">${optionsHtml}</div>
+      <div class="nav">
+        <button onclick="prevQ()" ${idx === 0 ? 'disabled' : ''}>← Previous</button>
+        <button class="flag ${isFlagged ? 'flagged' : ''}" onclick="toggleFlag(${q.id})">${flagLabel}</button>
+        <button class="primary" onclick="nextQ()" ${isLast ? 'disabled' : ''}>Next →</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('progressInfo').textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
+  updateGrid('qgrid', false);
+  updateSubmitSummary();
+}
+
+function selectOption(qid, optIdx) {
+  answers[qid] = optIdx;
+  renderQuestion(currentIdx);
+}
+
+function toggleFlag(qid) {
+  flagged[qid] = !flagged[qid];
+  renderQuestion(currentIdx);
+}
+
+function prevQ() {
+  if (currentIdx > 0) renderQuestion(currentIdx - 1);
+}
+
+function nextQ() {
+  if (currentIdx < QUESTIONS.length - 1) renderQuestion(currentIdx + 1);
+}
+
+function buildGrid(gridId, isReview) {
+  const grid = document.getElementById(gridId);
+  grid.innerHTML = '';
+  QUESTIONS.forEach((q, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'qcell';
+    cell.textContent = i + 1;
+    cell.onclick = () => {
+      if (isReview) renderReview(i);
+      else { renderQuestion(i); }
+    };
+    grid.appendChild(cell);
+  });
+  updateGrid(gridId, isReview);
+}
+
+function updateGrid(gridId, isReview) {
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
+  const cells = grid.children;
+  for (let i = 0; i < cells.length; i++) {
+    const q = QUESTIONS[i];
+    const cell = cells[i];
+    cell.classList.remove('answered', 'flagged', 'current', 'correct', 'wrong');
+    if (isReview) {
+      if (answers[q.id] === q.answer) cell.classList.add('correct');
+      else cell.classList.add('wrong');
+      if (i === reviewIdx) cell.classList.add('current');
+    } else {
+      if (answers[q.id] !== undefined) cell.classList.add('answered');
+      if (flagged[q.id]) cell.classList.add('flagged');
+      if (i === currentIdx) cell.classList.add('current');
+    }
+  }
+}
+
+function toggleGrid() {
+  document.getElementById('qgrid').classList.toggle('show');
+  const r = document.getElementById('qgridReview');
+  if (r) r.classList.toggle('show');
+  const btns = [document.getElementById('gridToggle'), document.getElementById('gridToggle2')];
+  btns.forEach(b => {
+    if (b) {
+      const isShown = document.getElementById('qgrid').classList.contains('show') ||
+                      (r && r.classList.contains('show'));
+      b.textContent = isShown ? 'Hide question overview' : 'Show question overview';
+    }
+  });
+}
+
+function updateSubmitSummary() {
+  const answered = Object.keys(answers).length;
+  const flagCount = Object.values(flagged).filter(v => v).length;
+  const remaining = QUESTIONS.length - answered;
+  document.getElementById('submitSummary').textContent =
+    `${answered} answered · ${flagCount} flagged · ${remaining} unanswered`;
+}
+
+function showModal(title, message, onConfirm, confirmLabel) {
+  document.getElementById('modalTitle').textContent = title || 'Confirm';
+  document.getElementById('modalMessage').textContent = message;
+  const btn = document.getElementById('modalConfirmBtn');
+  btn.textContent = confirmLabel || 'Submit';
+  // Replace handler each time (avoid stacking listeners)
+  btn.onclick = function() {
+    hideModal();
+    onConfirm();
+  };
+  document.getElementById('modalBackdrop').classList.add('show');
+}
+
+function hideModal(event) {
+  // If called from backdrop click, only close if backdrop itself was clicked
+  if (event && event.target.id !== 'modalBackdrop') return;
+  document.getElementById('modalBackdrop').classList.remove('show');
+}
+
+function confirmSubmit() {
+  const answered = Object.keys(answers).length;
+  const remaining = QUESTIONS.length - answered;
+  let msg = 'Submit the exam now? You will see your score and full review of all questions.';
+  if (remaining > 0) {
+    msg = `You have ${remaining} unanswered question${remaining > 1 ? 's' : ''}. ` +
+          `Submit anyway? (Unanswered questions are counted wrong — there's no penalty for guessing.)`;
+  }
+  showModal('Submit exam', msg, submitExam, 'Submit');
+}
+
+function submitExam() {
+  if (examSubmitted) return;
+  examSubmitted = true;
+  if (timerInterval) clearInterval(timerInterval);
+  showResults();
+}
+
+function showResults() {
+  document.getElementById('examUI').style.display = 'none';
+  document.getElementById('resultsScreen').style.display = 'block';
+
+  const score = QUESTIONS.filter(q => answers[q.id] === q.answer).length;
+  const pct = score / QUESTIONS.length;
+  const pctDisplay = Math.round(pct * 100);
+
+  document.getElementById('finalScore').textContent = `${score} / ${QUESTIONS.length}`;
+  document.getElementById('finalPercent').textContent = `${pctDisplay}%`;
+
+  const passed = pct >= PASS_MARK;
+  document.getElementById('passFailBadge').innerHTML =
+    `<div class="pass-fail ${passed ? 'pass' : 'fail'}">
+      ${passed ? '✓ ABOVE PASS MARK (~65%)' : 'BELOW PASS MARK (~65%)'}
+    </div>`;
+
+  let verdict = '';
+  if (pct >= 0.85) verdict = "Excellent — well above the pass mark. Focus your remaining time on whichever specific topics showed any weakness below.";
+  else if (pct >= 0.70) verdict = "Strong performance, comfortably above the pass mark. Drill the weak topic areas below to consolidate.";
+  else if (pct >= 0.55) verdict = "On the edge of the pass mark. Targeted study of the weak areas below should push you well over.";
+  else verdict = "Significant gaps to address — but this is good information to have now, not after the real exam. Focus on the weakest topic areas first.";
+  document.getElementById('verdictText').textContent = verdict;
+
+  // Topic breakdown
+  const topicStats = {}, typeStats = {};
+  QUESTIONS.forEach(q => {
+    const correct = answers[q.id] === q.answer;
+    topicStats[q.topic] = topicStats[q.topic] || { c: 0, t: 0 };
+    topicStats[q.topic].t++;
+    if (correct) topicStats[q.topic].c++;
+    typeStats[q.type] = typeStats[q.type] || { c: 0, t: 0 };
+    typeStats[q.type].t++;
+    if (correct) typeStats[q.type].c++;
+  });
+  function renderBreakdown(stats, elId) {
+    const rows = Object.entries(stats).sort((a,b) => (b[1].c/b[1].t) - (a[1].c/a[1].t));
+    document.getElementById(elId).innerHTML = rows.map(([name, s]) => {
+      const p = s.c / s.t;
+      const cls = p >= 0.75 ? 'good' : p >= 0.5 ? 'mid' : 'weak';
+      return `<div class="breakdown-row">
+        <span class="label">${escapeHtml(name)}</span>
+        <span class="score ${cls}">${s.c} / ${s.t} (${Math.round(p*100)}%)</span>
+      </div>`;
+    }).join('');
+  }
+  renderBreakdown(topicStats, 'topicBreakdown');
+  renderBreakdown(typeStats, 'typeBreakdown');
+}
+
+function showReview() {
+  document.getElementById('resultsScreen').style.display = 'none';
+  document.getElementById('reviewScreen').style.display = 'block';
+  buildGrid('qgridReview', true);
+  reviewIdx = 0;
+  renderReview(0);
+}
+
+function showResultsFromReview() {
+  document.getElementById('reviewScreen').style.display = 'none';
+  document.getElementById('resultsScreen').style.display = 'block';
+}
+
+function renderReview(idx) {
+  reviewIdx = idx;
+  const q = QUESTIONS[idx];
+  const userAnswer = answers[q.id];
+  const wasCorrect = userAnswer === q.answer;
+  const userAnswered = userAnswer !== undefined;
+
+  let optionsHtml = '';
+  q.options.forEach((text, i) => {
+    let classes = 'option locked';
+    if (i === q.answer) classes += ' correct';
+    else if (i === userAnswer) classes += ' wrong';
+    else classes += ' dimmed';
+    optionsHtml += `
+      <div class="${classes}">
+        <span class="option-letter">${LETTERS[i]}.</span>
+        <span>${escapeHtml(text)}</span>
+      </div>`;
+  });
+
+  let verdictText;
+  if (!userAnswered) {
+    verdictText = `Not answered — correct answer is ${LETTERS[q.answer]}`;
+  } else if (wasCorrect) {
+    verdictText = `✓ Correct`;
+  } else {
+    verdictText = `✗ You answered ${LETTERS[userAnswer]} — correct answer is ${LETTERS[q.answer]}`;
+  }
+
+  document.getElementById('reviewContent').innerHTML = `
+    <div class="question">
+      <div class="qmeta">
+        <span class="qnumber">Question ${idx + 1} of ${QUESTIONS.length}</span>
+        <span class="qtopic">${escapeHtml(q.topic)} · ${escapeHtml(q.type)}</span>
+      </div>
+      <div class="stem">${escapeHtml(q.stem)}</div>
+      <div class="options">${optionsHtml}</div>
+      <div class="feedback show ${wasCorrect ? 'correct' : 'wrong'}">
+        <div class="verdict">${verdictText}</div>
+        <div>${escapeHtml(q.explanation).replace(/\n/g, '<br>')}</div>
+      </div>
+      <div class="nav">
+        <button onclick="renderReview(${idx - 1})" ${idx === 0 ? 'disabled' : ''}>← Previous</button>
+        <button class="primary" onclick="renderReview(${idx + 1})" ${idx === QUESTIONS.length - 1 ? 'disabled' : ''}>Next →</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('reviewProgress').textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
+  updateGrid('qgridReview', true);
+}
+
+// Keyboard navigation during exam (not review)
+document.addEventListener('keydown', (e) => {
+  if (document.getElementById('examUI').style.display === 'none' &&
+      document.getElementById('reviewScreen').style.display === 'none') return;
+
+  const inReview = document.getElementById('reviewScreen').style.display !== 'none';
+  if (inReview) {
+    if (e.key === 'ArrowRight' && reviewIdx < QUESTIONS.length - 1) renderReview(reviewIdx + 1);
+    if (e.key === 'ArrowLeft' && reviewIdx > 0) renderReview(reviewIdx - 1);
+    return;
+  }
+
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') nextQ();
+  else if (e.key === 'ArrowLeft') prevQ();
+  else if (['1','2','3','4'].includes(e.key)) {
+    const q = QUESTIONS[currentIdx];
+    selectOption(q.id, parseInt(e.key) - 1);
+  } else if (['a','b','c','d','A','B','C','D'].includes(e.key)) {
+    const q = QUESTIONS[currentIdx];
+    selectOption(q.id, 'ABCD'.indexOf(e.key.toUpperCase()));
+  } else if (e.key === 'f' || e.key === 'F') {
+    const q = QUESTIONS[currentIdx];
+    toggleFlag(q.id);
+  }
+});
+</script>
+</body>
+</html>
